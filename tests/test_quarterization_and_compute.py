@@ -29,6 +29,9 @@ class QuarterizationTests(unittest.TestCase):
             gross_profit="60",
             operating_income="20",
             net_income="16",
+            income_before_tax="18",
+            income_tax_expense="3",
+            interest_expense="-4",
             operating_cash_flow="30",
             capital_expenditures_proxy="8",
             depreciation_and_amortization="4",
@@ -37,11 +40,14 @@ class QuarterizationTests(unittest.TestCase):
             weighted_avg_shares_diluted="102",
             total_assets="1100",
             total_equity="700",
+            retained_earnings="420",
             current_assets="500",
             current_liabilities="200",
             cash_and_equivalents="100",
             short_term_investments="50",
             accounts_receivable_net="90",
+            goodwill="45",
+            intangible_assets_excluding_goodwill="25",
             shares_outstanding_end="100",
             total_debt="200",
         )
@@ -53,6 +59,9 @@ class QuarterizationTests(unittest.TestCase):
             gross_profit="150",
             operating_income="55",
             net_income="44",
+            income_before_tax="50",
+            income_tax_expense="8",
+            interest_expense="-10",
             operating_cash_flow="75",
             capital_expenditures_proxy="20",
             depreciation_and_amortization="9",
@@ -61,11 +70,14 @@ class QuarterizationTests(unittest.TestCase):
             weighted_avg_shares_diluted="103",
             total_assets="1150",
             total_equity="730",
+            retained_earnings="455",
             current_assets="530",
             current_liabilities="210",
             cash_and_equivalents="120",
             short_term_investments="55",
             accounts_receivable_net="95",
+            goodwill="46",
+            intangible_assets_excluding_goodwill="26",
             shares_outstanding_end="99",
             total_debt="210",
         )
@@ -77,6 +89,8 @@ class QuarterizationTests(unittest.TestCase):
         self.assertEqual(field_by_code["revenue"].value, "160")
         self.assertEqual(field_by_code["operating_cash_flow"].value, "45")
         self.assertEqual(field_by_code["capital_expenditures_proxy"].value, "12")
+        self.assertEqual(field_by_code["interest_expense"].value, "-6")
+        self.assertEqual(field_by_code["income_tax_expense"].value, "5")
         self.assertIn("quarter_derived_from_current_ytd_minus_q1_ytd", field_by_code["revenue"].warnings)
         self.assertEqual(field_by_code["current_assets"].value, "530")
 
@@ -90,6 +104,9 @@ class MetricComputationTests(unittest.TestCase):
             gross_profit="600",
             operating_income="250",
             net_income="200",
+            income_before_tax="240",
+            income_tax_expense="40",
+            interest_expense="-20",
             operating_cash_flow="260",
             capital_expenditures_proxy="60",
             depreciation_and_amortization="30",
@@ -98,11 +115,14 @@ class MetricComputationTests(unittest.TestCase):
             weighted_avg_shares_diluted="104",
             total_assets="1200",
             total_equity="800",
+            retained_earnings="500",
             current_assets="500",
             current_liabilities="250",
             cash_and_equivalents="120",
             short_term_investments="80",
             accounts_receivable_net="90",
+            goodwill="50",
+            intangible_assets_excluding_goodwill="30",
             shares_outstanding_end="100",
             total_debt="300",
         )
@@ -113,6 +133,9 @@ class MetricComputationTests(unittest.TestCase):
             gross_profit="500",
             operating_income="210",
             net_income="170",
+            income_before_tax="205",
+            income_tax_expense="35",
+            interest_expense="-18",
             operating_cash_flow="220",
             capital_expenditures_proxy="55",
             depreciation_and_amortization="28",
@@ -121,11 +144,14 @@ class MetricComputationTests(unittest.TestCase):
             weighted_avg_shares_diluted="110",
             total_assets="1000",
             total_equity="700",
+            retained_earnings="400",
             current_assets="450",
             current_liabilities="230",
             cash_and_equivalents="110",
             short_term_investments="70",
             accounts_receivable_net="85",
+            goodwill="55",
+            intangible_assets_excluding_goodwill="35",
             shares_outstanding_end="110",
             total_debt="280",
         )
@@ -139,7 +165,17 @@ class MetricComputationTests(unittest.TestCase):
         self.assertEqual(_q(metric_by_code["current_ratio"].value), Decimal("2"))
         self.assertEqual(_q(metric_by_code["quick_ratio"].value), Decimal("1.16"))
         self.assertEqual(_q(metric_by_code["book_value_per_share"].value), Decimal("8"))
+        self.assertEqual(_q(metric_by_code["tangible_book_value_per_share"].value), Decimal("7.2"))
         self.assertEqual(_q(metric_by_code["owners_earnings_approx"].value), Decimal("170"))
+        self.assertEqual(_q(metric_by_code["roic"].value), Decimal("0.2450980392156862745098039215"))
+        self.assertEqual(_q(metric_by_code["cash_conversion_ocf_to_net_income"].value), Decimal("1.3"))
+        self.assertEqual(_q(metric_by_code["cash_conversion_fcf_to_net_income"].value), Decimal("1"))
+        self.assertEqual(_q(metric_by_code["net_debt"].value), Decimal("100"))
+        self.assertEqual(_q(metric_by_code["net_debt_to_fcf"].value), Decimal("0.5"))
+        self.assertEqual(_q(metric_by_code["debt_payback_years"].value), Decimal("1.5"))
+        self.assertEqual(_q(metric_by_code["retained_earnings_growth"].value), Decimal("0.25"))
+        self.assertEqual(_q(metric_by_code["return_on_tangible_capital"].value), Decimal("0.3759398496240601503759398496"))
+        self.assertEqual(_q(metric_by_code["interest_coverage"].value), Decimal("12.5"))
         self.assertEqual(metric_by_code["roe"].applicability, "applicable")
 
     def test_compute_quarterly_metrics_bundle_on_standalone_q2(self) -> None:
@@ -151,6 +187,9 @@ class MetricComputationTests(unittest.TestCase):
             gross_profit="60",
             operating_income="20",
             net_income="16",
+            income_before_tax="18",
+            income_tax_expense="3",
+            interest_expense="-4",
             operating_cash_flow="30",
             capital_expenditures_proxy="8",
             depreciation_and_amortization="4",
@@ -159,11 +198,14 @@ class MetricComputationTests(unittest.TestCase):
             weighted_avg_shares_diluted="102",
             total_assets="1100",
             total_equity="700",
+            retained_earnings="420",
             current_assets="500",
             current_liabilities="200",
             cash_and_equivalents="100",
             short_term_investments="50",
             accounts_receivable_net="90",
+            goodwill="45",
+            intangible_assets_excluding_goodwill="25",
             shares_outstanding_end="100",
             total_debt="200",
         )
@@ -175,6 +217,9 @@ class MetricComputationTests(unittest.TestCase):
             gross_profit="150",
             operating_income="55",
             net_income="44",
+            income_before_tax="50",
+            income_tax_expense="8",
+            interest_expense="-10",
             operating_cash_flow="75",
             capital_expenditures_proxy="20",
             depreciation_and_amortization="9",
@@ -183,11 +228,14 @@ class MetricComputationTests(unittest.TestCase):
             weighted_avg_shares_diluted="103",
             total_assets="1150",
             total_equity="730",
+            retained_earnings="455",
             current_assets="530",
             current_liabilities="210",
             cash_and_equivalents="120",
             short_term_investments="55",
             accounts_receivable_net="95",
+            goodwill="46",
+            intangible_assets_excluding_goodwill="26",
             shares_outstanding_end="99",
             total_debt="210",
         )
@@ -199,6 +247,9 @@ class MetricComputationTests(unittest.TestCase):
             gross_profit="84",
             operating_income="28",
             net_income="22",
+            income_before_tax="26",
+            income_tax_expense="4",
+            interest_expense="-5",
             operating_cash_flow="35",
             capital_expenditures_proxy="10",
             depreciation_and_amortization="5",
@@ -207,11 +258,14 @@ class MetricComputationTests(unittest.TestCase):
             weighted_avg_shares_diluted="106",
             total_assets="1025",
             total_equity="680",
+            retained_earnings="390",
             current_assets="470",
             current_liabilities="190",
             cash_and_equivalents="95",
             short_term_investments="45",
             accounts_receivable_net="80",
+            goodwill="44",
+            intangible_assets_excluding_goodwill="24",
             shares_outstanding_end="104",
             total_debt="195",
         )
@@ -224,7 +278,11 @@ class MetricComputationTests(unittest.TestCase):
         self.assertEqual(_q(metric_by_code["free_cash_flow"].value), Decimal("33"))
         self.assertEqual(_q(metric_by_code["free_cash_flow_margin"].value), Decimal("0.20625"))
         self.assertEqual(_q(metric_by_code["revenue_growth"].value), (Decimal("160") / Decimal("140")) - Decimal("1"))
+        self.assertEqual(_q(metric_by_code["cash_conversion_ocf_to_net_income"].value), Decimal("1.607142857142857142857142857"))
+        self.assertEqual(_q(metric_by_code["net_debt"].value), Decimal("35"))
+        self.assertEqual(_q(metric_by_code["interest_coverage"].value), Decimal("5.833333333333333333333333333"))
         self.assertIn("annualized_from_quarter", metric_by_code["roe"].warnings)
+        self.assertIn("annualized_from_quarter", metric_by_code["roic"].warnings)
         self.assertEqual(metric_by_code["roe"].applicability, "applicable")
 
 

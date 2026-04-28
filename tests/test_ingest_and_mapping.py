@@ -128,6 +128,10 @@ class CanonicalFieldMappingTests(unittest.TestCase):
         self.assertEqual(field_by_code["total_debt"].value, "450")
         self.assertIn("debt_components_aggregated", field_by_code["total_debt"].warnings)
         self.assertEqual(len(field_by_code["total_debt"].source_facts), 2)
+        self.assertEqual(field_by_code["retained_earnings"].value, "900")
+        self.assertEqual(field_by_code["interest_expense"].value, "-24")
+        self.assertEqual(field_by_code["goodwill"].value, "150")
+        self.assertEqual(field_by_code["intangible_assets_excluding_goodwill"].value, "75")
 
     def test_build_period_fields_artifact_carries_identity_and_parser_warnings(self) -> None:
         filing = load_periodic_report_filing(_write_periodic_fixture("mapping_artifact.json"))
@@ -236,6 +240,45 @@ def _write_periodic_fixture(name: str) -> Path:
                         "ticker_workspace": "example",
                         "filing_date": "2026-11-01",
                         "form": "10-Q",
+                        "concept_qname": "us-gaap:InterestExpenseAndDebtExpense",
+                        "concept_local_name": "InterestExpenseAndDebtExpense",
+                        "dimensions": {},
+                        "parser_format": "inline_xbrl",
+                        "source_path": "D:/data/source",
+                        "validation_status": "pass",
+                        "statement_hint": "income_statement",
+                        "report_period": "2026-09-30",
+                        "context_id": "c1",
+                        "period_start": "2026-01-01",
+                        "period_end": "2026-09-30",
+                        "unit": "iso4217:USD",
+                        "value": "(24)"
+                    },
+                    {
+                        "accession_number": "0009",
+                        "cik": "0000999",
+                        "ticker_workspace": "example",
+                        "filing_date": "2026-11-01",
+                        "form": "10-Q",
+                        "concept_qname": "us-gaap:RetainedEarningsAccumulatedDeficit",
+                        "concept_local_name": "RetainedEarningsAccumulatedDeficit",
+                        "dimensions": {},
+                        "parser_format": "inline_xbrl",
+                        "source_path": "D:/data/source",
+                        "validation_status": "pass",
+                        "statement_hint": "balance_sheet",
+                        "report_period": "2026-09-30",
+                        "context_id": "i1",
+                        "instant": "2026-09-30",
+                        "unit": "iso4217:USD",
+                        "value": "900"
+                    },
+                    {
+                        "accession_number": "0009",
+                        "cik": "0000999",
+                        "ticker_workspace": "example",
+                        "filing_date": "2026-11-01",
+                        "form": "10-Q",
                         "concept_qname": "us-gaap:Assets",
                         "concept_local_name": "Assets",
                         "dimensions": {},
@@ -267,6 +310,44 @@ def _write_periodic_fixture(name: str) -> Path:
                         "instant": "2026-09-30",
                         "unit": "iso4217:USD",
                         "value": "2,500"
+                    },
+                    {
+                        "accession_number": "0009",
+                        "cik": "0000999",
+                        "ticker_workspace": "example",
+                        "filing_date": "2026-11-01",
+                        "form": "10-Q",
+                        "concept_qname": "us-gaap:Goodwill",
+                        "concept_local_name": "Goodwill",
+                        "dimensions": {},
+                        "parser_format": "inline_xbrl",
+                        "source_path": "D:/data/source",
+                        "validation_status": "pass",
+                        "statement_hint": "balance_sheet",
+                        "report_period": "2026-09-30",
+                        "context_id": "i1",
+                        "instant": "2026-09-30",
+                        "unit": "iso4217:USD",
+                        "value": "150"
+                    },
+                    {
+                        "accession_number": "0009",
+                        "cik": "0000999",
+                        "ticker_workspace": "example",
+                        "filing_date": "2026-11-01",
+                        "form": "10-Q",
+                        "concept_qname": "us-gaap:FiniteLivedIntangibleAssetsNet",
+                        "concept_local_name": "FiniteLivedIntangibleAssetsNet",
+                        "dimensions": {},
+                        "parser_format": "inline_xbrl",
+                        "source_path": "D:/data/source",
+                        "validation_status": "pass",
+                        "statement_hint": "balance_sheet",
+                        "report_period": "2026-09-30",
+                        "context_id": "i1",
+                        "instant": "2026-09-30",
+                        "unit": "iso4217:USD",
+                        "value": "75"
                     },
                     {
                         "accession_number": "0009",

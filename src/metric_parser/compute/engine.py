@@ -119,6 +119,8 @@ def _compute_metric_record(
         value, source_fields, warnings = _return_metric_result(fields_artifact, field_map, previous_field_map, "net_income", "total_equity")
     elif metric_code == "roa":
         value, source_fields, warnings = _return_metric_result(fields_artifact, field_map, previous_field_map, "net_income", "total_assets")
+    elif metric_code == "roic":
+        value, source_fields, warnings = _roic_result(fields_artifact, field_map, previous_field_map)
     elif metric_code == "operating_cash_flow":
         value, source_fields, warnings = _field_value_result(field_map, "operating_cash_flow")
     elif metric_code == "free_cash_flow":
@@ -127,6 +129,14 @@ def _compute_metric_record(
         fcf_value, fcf_fields, fcf_warnings = _difference_result(field_map.get("operating_cash_flow"), field_map.get("capital_expenditures_proxy"))
         value, warnings = _ratio_from_values(fcf_value, _field_value(field_map.get("revenue")))
         source_fields = fcf_fields + _used_fields(field_map.get("revenue"))
+        warnings = fcf_warnings + warnings
+    elif metric_code == "cash_conversion_ocf_to_net_income":
+        value, warnings = _ratio_result(field_map.get("operating_cash_flow"), field_map.get("net_income"))
+        source_fields = _used_fields(field_map.get("operating_cash_flow"), field_map.get("net_income"))
+    elif metric_code == "cash_conversion_fcf_to_net_income":
+        fcf_value, fcf_fields, fcf_warnings = _difference_result(field_map.get("operating_cash_flow"), field_map.get("capital_expenditures_proxy"))
+        value, warnings = _ratio_from_values(fcf_value, _field_value(field_map.get("net_income")))
+        source_fields = fcf_fields + _used_fields(field_map.get("net_income"))
         warnings = fcf_warnings + warnings
     elif metric_code == "free_cash_flow_per_share":
         fcf_value, fcf_fields, fcf_warnings = _difference_result(field_map.get("operating_cash_flow"), field_map.get("capital_expenditures_proxy"))
@@ -150,6 +160,13 @@ def _compute_metric_record(
         value, warnings = _growth_from_values(current_bvps, prior_bvps)
         source_fields = current_fields + prior_fields
         warnings = current_warnings + prior_warnings + warnings
+    elif metric_code == "tangible_book_value_per_share":
+        current_tbvps, current_fields, current_warnings = _tangible_book_value_per_share_components(field_map)
+        value = current_tbvps
+        source_fields = current_fields
+        warnings = current_warnings
+    elif metric_code == "retained_earnings_growth":
+        value, source_fields, warnings = _growth_result(field_map.get("retained_earnings"), prior_comparable_map.get("retained_earnings"))
     elif metric_code == "debt_to_capital":
         total_debt = field_map.get("total_debt")
         total_equity = field_map.get("total_equity")
@@ -162,6 +179,21 @@ def _compute_metric_record(
         value, warnings = _ratio_from_values(avg_assets, avg_equity)
         source_fields = asset_fields + equity_fields
         warnings = asset_warnings + equity_warnings + warnings
+    elif metric_code == "net_debt":
+        value, source_fields, warnings = _net_debt_result(field_map)
+    elif metric_code == "net_debt_to_fcf":
+        net_debt_value, net_debt_fields, net_debt_warnings = _net_debt_result(field_map)
+        fcf_value, fcf_fields, fcf_warnings = _difference_result(field_map.get("operating_cash_flow"), field_map.get("capital_expenditures_proxy"))
+        value, warnings = _ratio_from_values(net_debt_value, fcf_value)
+        source_fields = net_debt_fields + fcf_fields
+        warnings = net_debt_warnings + fcf_warnings + warnings
+    elif metric_code == "debt_payback_years":
+        fcf_value, fcf_fields, fcf_warnings = _difference_result(field_map.get("operating_cash_flow"), field_map.get("capital_expenditures_proxy"))
+        value, warnings = _ratio_from_values(_field_value(field_map.get("total_debt")), fcf_value)
+        source_fields = _used_fields(field_map.get("total_debt")) + fcf_fields
+        warnings = fcf_warnings + warnings
+    elif metric_code == "return_on_tangible_capital":
+        value, source_fields, warnings = _return_on_tangible_capital_result(fields_artifact, field_map, previous_field_map)
     elif metric_code == "current_ratio":
         value, warnings = _ratio_result(field_map.get("current_assets"), field_map.get("current_liabilities"))
         source_fields = _used_fields(field_map.get("current_assets"), field_map.get("current_liabilities"))
@@ -174,6 +206,8 @@ def _compute_metric_record(
     elif metric_code == "dividend_payout_ratio":
         value, warnings = _ratio_result(field_map.get("dividends_common_cash"), field_map.get("net_income"))
         source_fields = _used_fields(field_map.get("dividends_common_cash"), field_map.get("net_income"))
+    elif metric_code == "interest_coverage":
+        value, source_fields, warnings = _interest_coverage_result(field_map)
     elif metric_code == "owners_earnings_approx":
         net_income = field_map.get("net_income")
         depreciation = field_map.get("depreciation_and_amortization")
@@ -307,6 +341,86 @@ def _return_metric_result(
     return value, _used_fields(income_field) + balance_fields, annualization_warnings + balance_warnings + warnings
 
 
+def _roic_result(
+    fields_artifact: PeriodFieldsArtifact,
+    field_map: dict[str, CanonicalFieldRecord],
+    previous_field_map: dict[str, CanonicalFieldRecord],
+) -> tuple[str | None, list[CanonicalFieldRecord], list[str]]:
+    operating_income = field_map.get("operating_income")
+    operating_income_value = _field_value(operating_income)
+    if operating_income_value is None:
+        return None, _used_fields(operating_income), ["missing_required_source_fact"]
+
+    annualization_warnings: list[str] = []
+    if fields_artifact.identity.period_type == "quarterly":
+        operating_income_value = _annualize_quarter_value(operating_income_value)
+        annualization_warnings.append("annualized_from_quarter")
+
+    tax_rate_value, tax_fields, tax_warnings = _effective_tax_rate(field_map)
+    nopat_value = operating_income_value
+    if tax_rate_value is None:
+        tax_warnings.append("nopat_using_operating_income_pretax")
+    else:
+        nopat_value = _multiply_values(operating_income_value, _subtract("1", tax_rate_value))
+
+    current_invested_capital, current_fields, current_warnings = _invested_capital_value(field_map)
+    previous_invested_capital, previous_fields, previous_warnings = _invested_capital_value(previous_field_map)
+    average_invested_capital, average_warnings = _average_value(
+        current_invested_capital,
+        previous_invested_capital,
+        "average_invested_capital_unavailable_used_current",
+    )
+    value, warnings = _ratio_from_values(nopat_value, average_invested_capital)
+    source_fields = _used_fields(operating_income) + tax_fields + current_fields + previous_fields
+    return value, source_fields, annualization_warnings + tax_warnings + current_warnings + previous_warnings + average_warnings + warnings
+
+
+def _return_on_tangible_capital_result(
+    fields_artifact: PeriodFieldsArtifact,
+    field_map: dict[str, CanonicalFieldRecord],
+    previous_field_map: dict[str, CanonicalFieldRecord],
+) -> tuple[str | None, list[CanonicalFieldRecord], list[str]]:
+    operating_income = field_map.get("operating_income")
+    operating_income_value = _field_value(operating_income)
+    if operating_income_value is None:
+        return None, _used_fields(operating_income), ["missing_required_source_fact"]
+
+    annualization_warnings: list[str] = []
+    if fields_artifact.identity.period_type == "quarterly":
+        operating_income_value = _annualize_quarter_value(operating_income_value)
+        annualization_warnings.append("annualized_from_quarter")
+
+    current_tangible_capital, current_fields, current_warnings = _tangible_capital_value(field_map)
+    previous_tangible_capital, previous_fields, previous_warnings = _tangible_capital_value(previous_field_map)
+    average_tangible_capital, average_warnings = _average_value(
+        current_tangible_capital,
+        previous_tangible_capital,
+        "average_tangible_capital_unavailable_used_current",
+    )
+    value, warnings = _ratio_from_values(operating_income_value, average_tangible_capital)
+    source_fields = _used_fields(operating_income) + current_fields + previous_fields
+    return value, source_fields, annualization_warnings + current_warnings + previous_warnings + average_warnings + warnings
+
+
+def _interest_coverage_result(field_map: dict[str, CanonicalFieldRecord]) -> tuple[str | None, list[CanonicalFieldRecord], list[str]]:
+    operating_income = field_map.get("operating_income")
+    interest_expense = field_map.get("interest_expense")
+    interest_value = _field_value(interest_expense)
+    warnings: list[str] = []
+    if interest_value is None:
+        return None, _used_fields(operating_income, interest_expense), ["missing_required_source_fact"]
+
+    try:
+        interest_decimal = Decimal(interest_value)
+    except InvalidOperation:
+        return None, _used_fields(operating_income, interest_expense), ["non_numeric_source_fact"]
+    if interest_decimal < 0:
+        warnings.append("interest_expense_absolute_value_used")
+        interest_value = _decimal_text(abs(interest_decimal))
+    value, ratio_warnings = _ratio_from_values(_field_value(operating_income), interest_value)
+    return value, _used_fields(operating_income, interest_expense), list(interest_expense.warnings if interest_expense is not None else []) + warnings + ratio_warnings
+
+
 def _average_balance(current: CanonicalFieldRecord | None, previous: CanonicalFieldRecord | None) -> tuple[str | None, list[str], list[CanonicalFieldRecord]]:
     current_value = _field_value(current)
     previous_value = _field_value(previous)
@@ -353,6 +467,114 @@ def _book_value_per_share_components(field_map: dict[str, CanonicalFieldRecord])
     return value, _used_fields(field_map.get("total_equity"), share_field), share_warnings + warnings
 
 
+def _tangible_book_value_per_share_components(field_map: dict[str, CanonicalFieldRecord]) -> tuple[str | None, list[CanonicalFieldRecord], list[str]]:
+    share_field, share_warnings = _ending_share_field(field_map)
+    tangible_capital, tangible_fields, tangible_warnings = _tangible_capital_value(field_map)
+    value, warnings = _ratio_from_values(tangible_capital, _field_value(share_field))
+    return value, tangible_fields + _used_fields(share_field), tangible_warnings + share_warnings + warnings
+
+
+def _effective_tax_rate(field_map: dict[str, CanonicalFieldRecord]) -> tuple[str | None, list[CanonicalFieldRecord], list[str]]:
+    income_before_tax = field_map.get("income_before_tax")
+    income_tax_expense = field_map.get("income_tax_expense")
+    pretax_value = _field_value(income_before_tax)
+    tax_value = _field_value(income_tax_expense)
+    source_fields = _used_fields(income_before_tax, income_tax_expense)
+    if pretax_value is None or tax_value is None:
+        return None, source_fields, ["effective_tax_rate_unavailable"]
+
+    try:
+        pretax_decimal = Decimal(pretax_value)
+        tax_decimal = Decimal(tax_value)
+    except InvalidOperation:
+        return None, source_fields, ["non_numeric_source_fact"]
+    if pretax_decimal <= 0:
+        return None, source_fields, ["non_positive_pretax_income"]
+
+    rate = tax_decimal / pretax_decimal
+    if rate < 0 or rate > 1:
+        return None, source_fields, ["effective_tax_rate_out_of_range"]
+    return _decimal_text(rate), source_fields, []
+
+
+def _invested_capital_value(field_map: dict[str, CanonicalFieldRecord]) -> tuple[str | None, list[CanonicalFieldRecord], list[str]]:
+    total_equity = field_map.get("total_equity")
+    total_debt = field_map.get("total_debt")
+    cash_and_equivalents = field_map.get("cash_and_equivalents")
+    short_term_investments = field_map.get("short_term_investments")
+    source_fields = _used_fields(total_equity, total_debt, cash_and_equivalents, short_term_investments)
+
+    equity_value = _field_value(total_equity)
+    debt_value = _field_value(total_debt)
+    if equity_value is None or debt_value is None:
+        return None, source_fields, ["missing_required_source_fact"]
+
+    base_value = _sum_values(equity_value, debt_value)
+    offset_warnings: list[str] = []
+    cash_offsets = [field for field in (cash_and_equivalents, short_term_investments) if field is not None and field.value is not None]
+    if not cash_offsets:
+        offset_warnings.append("cash_offsets_unavailable_using_gross_invested_capital")
+        return base_value, source_fields, offset_warnings
+
+    if cash_and_equivalents is None or cash_and_equivalents.value is None or short_term_investments is None or short_term_investments.value is None:
+        offset_warnings.append("partial_cash_offsets_used_in_invested_capital")
+    total_offsets = _sum_values(_field_value(cash_and_equivalents), _field_value(short_term_investments))
+    return _subtract(base_value, total_offsets), source_fields, offset_warnings
+
+
+def _net_debt_result(field_map: dict[str, CanonicalFieldRecord]) -> tuple[str | None, list[CanonicalFieldRecord], list[str]]:
+    total_debt = field_map.get("total_debt")
+    cash_and_equivalents = field_map.get("cash_and_equivalents")
+    short_term_investments = field_map.get("short_term_investments")
+    source_fields = _used_fields(total_debt, cash_and_equivalents, short_term_investments)
+    debt_value = _field_value(total_debt)
+    if debt_value is None:
+        return None, source_fields, ["missing_required_source_fact"]
+
+    available_offsets = [field for field in (cash_and_equivalents, short_term_investments) if field is not None and field.value is not None]
+    if not available_offsets:
+        return debt_value, source_fields, ["cash_offsets_unavailable_using_total_debt"]
+
+    warnings: list[str] = []
+    if cash_and_equivalents is None or cash_and_equivalents.value is None or short_term_investments is None or short_term_investments.value is None:
+        warnings.append("partial_cash_offsets_used_in_net_debt")
+    offset_value = _sum_values(_field_value(cash_and_equivalents), _field_value(short_term_investments))
+    return _subtract(debt_value, offset_value), source_fields, warnings
+
+
+def _tangible_capital_value(field_map: dict[str, CanonicalFieldRecord]) -> tuple[str | None, list[CanonicalFieldRecord], list[str]]:
+    total_equity = field_map.get("total_equity")
+    goodwill = field_map.get("goodwill")
+    intangible_assets = field_map.get("intangible_assets_excluding_goodwill")
+    source_fields = _used_fields(total_equity, goodwill, intangible_assets)
+    equity_value = _field_value(total_equity)
+    if equity_value is None:
+        return None, source_fields, ["missing_required_source_fact"]
+
+    warnings = ["tangible_capital_approximated_as_tangible_equity"]
+    available_adjustments = [field for field in (goodwill, intangible_assets) if field is not None and field.value is not None]
+    if not available_adjustments:
+        warnings.append("tangible_adjustments_unavailable_used_total_equity")
+        return equity_value, source_fields, warnings
+
+    if goodwill is None or goodwill.value is None or intangible_assets is None or intangible_assets.value is None:
+        warnings.append("partial_tangible_adjustments_used")
+    adjustment_value = _sum_values(_field_value(goodwill), _field_value(intangible_assets))
+    return _subtract(equity_value, adjustment_value), source_fields, warnings
+
+
+def _average_value(current: str | None, previous: str | None, fallback_warning: str) -> tuple[str | None, list[str]]:
+    if current is None:
+        return None, ["missing_required_source_fact"]
+    if previous is None:
+        return current, [fallback_warning]
+    try:
+        average = (Decimal(current) + Decimal(previous)) / Decimal("2")
+    except InvalidOperation:
+        return current, ["non_numeric_source_fact"]
+    return _decimal_text(average), []
+
+
 def _used_fields(*fields: CanonicalFieldRecord | None) -> list[CanonicalFieldRecord]:
     return [field for field in fields if field is not None]
 
@@ -386,6 +608,16 @@ def _subtract(left: str | None, right: str | None) -> str | None:
         return None
     try:
         result = Decimal(left) - Decimal(right)
+    except InvalidOperation:
+        return None
+    return _decimal_text(result)
+
+
+def _multiply_values(left: str | None, right: str | None) -> str | None:
+    if left is None or right is None:
+        return None
+    try:
+        result = Decimal(left) * Decimal(right)
     except InvalidOperation:
         return None
     return _decimal_text(result)
