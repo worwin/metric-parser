@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://metric-parser.local/schemas/metrics_bundle.schema.json",
+  "title": "Metrics Bundle Artifact",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "string" },
+    "run_id": { "type": "string" },
+    "ticker": { "type": "string" },
+    "cik": { "type": "string" },
+    "company_name": { "type": "string" },
+    "filing_period": { "type": "string", "format": "date" },
+    "period_type": { "type": "string", "enum": ["annual", "quarterly", "ttm"] },
+    "fiscal_year": { "type": "integer" },
+    "fiscal_quarter": { "type": ["integer", "null"], "minimum": 1, "maximum": 4 },
+    "period_start": { "type": ["string", "null"], "format": "date" },
+    "period_end": { "type": ["string", "null"], "format": "date" },
+    "primary_filing_accession": { "type": ["string", "null"] },
+    "source_accessions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "parser_warnings_inherited": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "metrics": {
+      "type": "array",
+      "items": { "$ref": "metric_record.schema.json" }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "$ref": "metric_warning.schema.json" }
+    }
+  },
+  "required": [
+    "schema_version",
+    "run_id",
+    "ticker",
+    "cik",
+    "company_name",
+    "filing_period",
+    "period_type",
+    "fiscal_year",
+    "fiscal_quarter",
+    "period_start",
+    "period_end",
+    "primary_filing_accession",
+    "source_accessions",
+    "parser_warnings_inherited",
+    "metrics",
+    "warnings"
+  ]
+}

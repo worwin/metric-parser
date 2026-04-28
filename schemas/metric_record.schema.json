@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://metric-parser.local/schemas/metric_record.schema.json",
+  "title": "Metric Record",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "metric_record_id": { "type": "string" },
+    "run_id": { "type": "string" },
+    "ticker": { "type": "string" },
+    "cik": { "type": "string" },
+    "company_name": { "type": "string" },
+    "filing_period": { "type": "string", "format": "date" },
+    "period_start": { "type": ["string", "null"], "format": "date" },
+    "period_end": { "type": ["string", "null"], "format": "date" },
+    "fiscal_year": { "type": "integer" },
+    "fiscal_quarter": { "type": ["integer", "null"], "minimum": 1, "maximum": 4 },
+    "period_type": { "type": "string", "enum": ["annual", "quarterly", "ttm"] },
+    "metric_name": { "type": "string" },
+    "metric_code": { "type": "string" },
+    "category": { "type": "string" },
+    "subcategory": { "type": ["string", "null"] },
+    "value": { "type": ["string", "null"] },
+    "value_type": { "type": "string" },
+    "unit": { "type": ["string", "null"] },
+    "formula_id": { "type": "string" },
+    "formula_version": { "type": "integer" },
+    "formula_text": { "type": "string" },
+    "source_facts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "role": { "type": "string" },
+          "source_accession": { "type": "string" },
+          "source_form": { "type": "string" },
+          "concept_local_name": { "type": "string" },
+          "concept_qname": { "type": ["string", "null"] },
+          "context_id": { "type": ["string", "null"] },
+          "period_start": { "type": ["string", "null"], "format": "date" },
+          "period_end": { "type": ["string", "null"], "format": "date" },
+          "instant": { "type": ["string", "null"], "format": "date" },
+          "unit": { "type": ["string", "null"] },
+          "raw_value": { "type": ["string", "null"] },
+          "source_path": { "type": ["string", "null"] },
+          "mapped_field_code": { "type": ["string", "null"] }
+        },
+        "required": [
+          "role",
+          "source_accession",
+          "source_form",
+          "concept_local_name"
+        ]
+      }
+    },
+    "source_accessions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "confidence": { "type": "string" },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "parser_warning_inherited": { "type": "boolean" },
+    "applicability": {
+      "type": "string",
+      "enum": ["applicable", "limited", "not_applicable", "not_computable"]
+    },
+    "primary_filing_accession": { "type": ["string", "null"] },
+    "created_at": { "type": "string" }
+  },
+  "required": [
+    "metric_record_id",
+    "run_id",
+    "ticker",
+    "cik",
+    "company_name",
+    "filing_period",
+    "period_start",
+    "period_end",
+    "fiscal_year",
+    "fiscal_quarter",
+    "period_type",
+    "metric_name",
+    "metric_code",
+    "category",
+    "subcategory",
+    "value",
+    "value_type",
+    "unit",
+    "formula_id",
+    "formula_version",
+    "formula_text",
+    "source_facts",
+    "source_accessions",
+    "confidence",
+    "warnings",
+    "parser_warning_inherited",
+    "applicability",
+    "primary_filing_accession",
+    "created_at"
+  ]
+}
+

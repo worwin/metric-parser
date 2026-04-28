@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://metric-parser.local/schemas/period_fields.schema.json",
+  "title": "Period Fields Artifact",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "string" },
+    "run_id": { "type": "string" },
+    "ticker": { "type": "string" },
+    "cik": { "type": "string" },
+    "company_name": { "type": "string" },
+    "filing_period": { "type": "string", "format": "date" },
+    "period_type": { "type": "string", "enum": ["annual", "quarterly", "ttm"] },
+    "fiscal_year": { "type": "integer" },
+    "fiscal_quarter": { "type": ["integer", "null"], "minimum": 1, "maximum": 4 },
+    "period_start": { "type": ["string", "null"], "format": "date" },
+    "period_end": { "type": ["string", "null"], "format": "date" },
+    "primary_filing_accession": { "type": ["string", "null"] },
+    "source_accessions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "parser_warnings_inherited": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "quarterization_method": { "type": ["string", "null"] },
+    "fields": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "field_code": { "type": "string" },
+          "field_name": { "type": "string" },
+          "value": { "type": ["string", "null"] },
+          "unit": { "type": ["string", "null"] },
+          "value_type": { "type": "string" },
+          "selection_method": { "type": "string" },
+          "confidence": { "type": "string" },
+          "warnings": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "source_facts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "role": { "type": "string" },
+                "source_accession": { "type": "string" },
+                "source_form": { "type": "string" },
+                "concept_local_name": { "type": "string" },
+                "concept_qname": { "type": ["string", "null"] },
+                "context_id": { "type": ["string", "null"] },
+                "period_start": { "type": ["string", "null"], "format": "date" },
+                "period_end": { "type": ["string", "null"], "format": "date" },
+                "instant": { "type": ["string", "null"], "format": "date" },
+                "unit": { "type": ["string", "null"] },
+                "raw_value": { "type": ["string", "null"] },
+                "source_path": { "type": ["string", "null"] },
+                "mapped_field_code": { "type": ["string", "null"] }
+              },
+              "required": [
+                "role",
+                "source_accession",
+                "source_form",
+                "concept_local_name"
+              ]
+            }
+          }
+        },
+        "required": [
+          "field_code",
+          "field_name",
+          "value",
+          "unit",
+          "value_type",
+          "selection_method",
+          "confidence",
+          "warnings",
+          "source_facts"
+        ]
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "run_id",
+    "ticker",
+    "cik",
+    "company_name",
+    "filing_period",
+    "period_type",
+    "fiscal_year",
+    "fiscal_quarter",
+    "period_start",
+    "period_end",
+    "primary_filing_accession",
+    "source_accessions",
+    "parser_warnings_inherited",
+    "quarterization_method",
+    "fields"
+  ]
+}
+

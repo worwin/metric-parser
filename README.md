@@ -1,4 +1,4 @@
-# metric-parser
+﻿# metric-parser
 
 `metric-parser` sits between `edgar-parser` and a downstream investment-analysis engine.
 
@@ -18,6 +18,78 @@ It does not:
 - emit buy, hold, or sell decisions
 
 Current status:
-- phase 1 architecture and schema design
+- phase 2 implementation is underway
+- canonical artifact schemas are defined under `schemas/`
+- typed artifact and ingestion models live under `src/metric_parser/`
+- periodic filing ingestion and amendment-aware selection are implemented
+- canonical field selection is implemented for the MVP field set
+- fiscal-quarter inference and standalone-quarter derivation are implemented
+- long-form metric bundle computation is implemented for the MVP metric set
+- canonical artifact writing is implemented
+- DuckDB schema creation, artifact ingestion, and query helpers are implemented
 
-See [docs/phase-01-architecture.md](docs/phase-01-architecture.md) for the initial design proposal.
+See [docs/phase-01-architecture.md](docs/phase-01-architecture.md) for the architecture proposal.
+
+Current package areas:
+- `src/metric_parser/ingest/`
+- `src/metric_parser/mapping/`
+- `src/metric_parser/quarterization/`
+- `src/metric_parser/compute/`
+- `src/metric_parser/artifacts/`
+- `src/metric_parser/db/`
+- `src/metric_parser/query/`
+- `src/metric_parser/models.py`
+- `schemas/*.schema.json`
+
+Basic local test command:
+
+```powershell
+$env:PYTHONPATH='src'
+python -m unittest discover -s tests -v
+```
+
+DuckDB review flow:
+
+```powershell
+$env:PYTHONPATH='src'
+@'
+from pathlib import Path
+from metric_parser import (
+    build_company_metric_history,
+    ingest_company_artifact_directories,
+    load_catalog_records,
+    MetricQueryService,
+    write_company_metric_artifacts,
+)
+
+root = Path(r'D:\Projects\metric-parser')
+review_root = root / '.tmp-tests' / 'review'
+db_path = review_root / 'metrics.duckdb'
+review_root.mkdir(parents=True, exist_ok=True)
+
+catalog_sets = {
+    'nvda': [
+        Path(r'D:\Projects\edgar-parser\_post2013_verify_20260329\catalog\filings.jsonl'),
+        Path(r'D:\Projects\edgar-parser\_modern_form_smokes_20260329\catalog\filings.jsonl'),
+    ],
+    'v': [
+        Path(r'D:\Projects\edgar-parser\_multi_verify_20260329\catalog\filings.jsonl'),
+    ],
+}
+artifact_dirs = []
+for ticker, catalog_paths in catalog_sets.items():
+    records = []
+    for catalog_path in catalog_paths:
+        records.extend(load_catalog_records(catalog_path))
+    records = [record for record in records if f'ticker/{ticker}/' in (record.local_normalized_path or '').replace('\\', '/').lower()]
+    build = build_company_metric_history(run_id=f'review-{ticker}', records=records)
+    artifact_dir = review_root / ticker
+    write_company_metric_artifacts(artifact_dir, build)
+    artifact_dirs.append(artifact_dir)
+
+ingest_company_artifact_directories(db_path, artifact_dirs)
+query = MetricQueryService(db_path)
+print(query.get_latest_metric('NVDA', 'free_cash_flow_margin'))
+print(query.get_metric_history('V', 'roe', 'annual')[-3:])
+'@ | python -
+```
