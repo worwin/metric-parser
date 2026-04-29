@@ -24,8 +24,6 @@ FLOW_FIELD_CODES = frozenset(
         "capital_expenditures_proxy",
         "depreciation_and_amortization",
         "dividends_common_cash",
-        "weighted_avg_shares_basic",
-        "weighted_avg_shares_diluted",
     }
 )
 
@@ -45,6 +43,13 @@ INSTANT_FIELD_CODES = frozenset(
         "debt_current",
         "debt_noncurrent",
         "total_debt",
+    }
+)
+
+NON_DELTA_CURRENT_FIELD_CODES = frozenset(
+    {
+        "weighted_avg_shares_basic",
+        "weighted_avg_shares_diluted",
     }
 )
 
@@ -98,6 +103,12 @@ def derive_standalone_quarter_fields(
             source_field = current_by_code.get(code) or annual_by_code.get(code)
             if source_field is not None:
                 derived_fields.append(source_field)
+            continue
+
+        if code in NON_DELTA_CURRENT_FIELD_CODES:
+            source_field = current_by_code.get(code) or annual_by_code.get(code)
+            if source_field is not None:
+                derived_fields.append(_mark_current_period_proxy(source_field, quarter))
             continue
 
         if code not in FLOW_FIELD_CODES:
@@ -186,6 +197,24 @@ def _delta_field(
         confidence="0.75",
         warnings=warnings,
         source_facts=source_facts,
+    )
+
+
+def _mark_current_period_proxy(field: CanonicalFieldRecord, quarter: int) -> CanonicalFieldRecord:
+    if quarter <= 1:
+        return field
+    warnings = list(field.warnings)
+    warnings.append("quarter_share_base_using_ytd_weighted_average")
+    return CanonicalFieldRecord(
+        field_code=field.field_code,
+        field_name=field.field_name,
+        value=field.value,
+        unit=field.unit,
+        value_type=field.value_type,
+        selection_method=field.selection_method,
+        confidence=field.confidence,
+        warnings=warnings,
+        source_facts=list(field.source_facts),
     )
 
 

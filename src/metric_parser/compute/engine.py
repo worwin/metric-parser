@@ -99,6 +99,8 @@ def _compute_metric_record(
         value, source_fields, warnings = _field_value_result(field_map, "revenue")
     elif metric_code == "revenue_growth":
         value, source_fields, warnings = _growth_result(field_map.get("revenue"), prior_comparable_map.get("revenue"))
+    elif metric_code == "net_income_growth":
+        value, source_fields, warnings = _growth_result(field_map.get("net_income"), prior_comparable_map.get("net_income"))
     elif metric_code == "gross_margin":
         gross_profit = field_map.get("gross_profit")
         revenue = field_map.get("revenue")
@@ -125,6 +127,12 @@ def _compute_metric_record(
         value, source_fields, warnings = _field_value_result(field_map, "operating_cash_flow")
     elif metric_code == "free_cash_flow":
         value, source_fields, warnings = _difference_result(field_map.get("operating_cash_flow"), field_map.get("capital_expenditures_proxy"))
+    elif metric_code == "free_cash_flow_growth":
+        current_fcf, current_fields, current_warnings = _difference_result(field_map.get("operating_cash_flow"), field_map.get("capital_expenditures_proxy"))
+        prior_fcf, prior_fields, prior_warnings = _difference_result(prior_comparable_map.get("operating_cash_flow"), prior_comparable_map.get("capital_expenditures_proxy"))
+        value, warnings = _growth_from_values(current_fcf, prior_fcf)
+        source_fields = current_fields + prior_fields
+        warnings = current_warnings + prior_warnings + warnings
     elif metric_code == "free_cash_flow_margin":
         fcf_value, fcf_fields, fcf_warnings = _difference_result(field_map.get("operating_cash_flow"), field_map.get("capital_expenditures_proxy"))
         value, warnings = _ratio_from_values(fcf_value, _field_value(field_map.get("revenue")))
@@ -149,6 +157,16 @@ def _compute_metric_record(
         value, warnings = _ratio_result(field_map.get("operating_cash_flow"), share_field)
         source_fields = _used_fields(field_map.get("operating_cash_flow"), share_field)
         warnings = share_warnings + warnings
+    elif metric_code == "eps_basic":
+        value, source_fields, warnings = _eps_components(field_map, diluted=False)
+    elif metric_code == "eps_diluted":
+        value, source_fields, warnings = _eps_components(field_map, diluted=True)
+    elif metric_code == "eps_growth":
+        current_eps, current_fields, current_warnings = _eps_components(field_map, diluted=True)
+        prior_eps, prior_fields, prior_warnings = _eps_components(prior_comparable_map, diluted=True)
+        value, warnings = _growth_from_values(current_eps, prior_eps)
+        source_fields = current_fields + prior_fields
+        warnings = current_warnings + prior_warnings + warnings
     elif metric_code == "book_value_per_share":
         share_field, share_warnings = _ending_share_field(field_map)
         value, warnings = _ratio_result(field_map.get("total_equity"), share_field)
@@ -203,6 +221,8 @@ def _compute_metric_record(
         source_fields = _used_fields(field_map.get("cash_and_equivalents"), field_map.get("short_term_investments"), field_map.get("accounts_receivable_net"), field_map.get("current_liabilities"))
     elif metric_code == "share_count_trend":
         value, source_fields, warnings = _growth_result(field_map.get("shares_outstanding_end"), prior_comparable_map.get("shares_outstanding_end"))
+    elif metric_code == "dividend_growth":
+        value, source_fields, warnings = _growth_result(field_map.get("dividends_common_cash"), prior_comparable_map.get("dividends_common_cash"))
     elif metric_code == "dividend_payout_ratio":
         value, warnings = _ratio_result(field_map.get("dividends_common_cash"), field_map.get("net_income"))
         source_fields = _used_fields(field_map.get("dividends_common_cash"), field_map.get("net_income"))
@@ -448,6 +468,19 @@ def _share_base_field(field_map: dict[str, CanonicalFieldRecord]) -> tuple[Canon
     return None, ["shares_outstanding_missing"]
 
 
+def _basic_share_field(field_map: dict[str, CanonicalFieldRecord]) -> tuple[CanonicalFieldRecord | None, list[str]]:
+    basic = field_map.get("weighted_avg_shares_basic")
+    if basic is not None and basic.value is not None:
+        return basic, []
+    ending = field_map.get("shares_outstanding_end")
+    if ending is not None and ending.value is not None:
+        return ending, ["share_count_fallback_to_ending_shares"]
+    diluted = field_map.get("weighted_avg_shares_diluted")
+    if diluted is not None and diluted.value is not None:
+        return diluted, ["share_count_fallback_to_weighted_average_diluted"]
+    return None, ["shares_outstanding_missing"]
+
+
 def _ending_share_field(field_map: dict[str, CanonicalFieldRecord]) -> tuple[CanonicalFieldRecord | None, list[str]]:
     ending = field_map.get("shares_outstanding_end")
     if ending is not None and ending.value is not None:
@@ -465,6 +498,12 @@ def _book_value_per_share_components(field_map: dict[str, CanonicalFieldRecord])
     share_field, share_warnings = _ending_share_field(field_map)
     value, warnings = _ratio_result(field_map.get("total_equity"), share_field)
     return value, _used_fields(field_map.get("total_equity"), share_field), share_warnings + warnings
+
+
+def _eps_components(field_map: dict[str, CanonicalFieldRecord], diluted: bool) -> tuple[str | None, list[CanonicalFieldRecord], list[str]]:
+    share_field, share_warnings = _share_base_field(field_map) if diluted else _basic_share_field(field_map)
+    value, warnings = _ratio_result(field_map.get("net_income"), share_field)
+    return value, _used_fields(field_map.get("net_income"), share_field), share_warnings + warnings
 
 
 def _tangible_book_value_per_share_components(field_map: dict[str, CanonicalFieldRecord]) -> tuple[str | None, list[CanonicalFieldRecord], list[str]]:
