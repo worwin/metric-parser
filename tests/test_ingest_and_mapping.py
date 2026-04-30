@@ -94,7 +94,11 @@ class EdgarIngestionTests(unittest.TestCase):
                             "period_start": "2025-01-01",
                             "period_end": "2025-12-31",
                             "unit": "iso4217:USD",
-                            "value": "100"
+                            "value": "100",
+                            "scale": 6,
+                            "scale_source": "inline_xbrl_attribute",
+                            "presentation_note": "Dollars in millions",
+                            "normalized_value": "100000000"
                         }
                     ],
                     "validation": {
@@ -113,6 +117,8 @@ class EdgarIngestionTests(unittest.TestCase):
         filing = load_periodic_report_filing(filing_path)
         self.assertEqual(filing.accession_number, "0001")
         self.assertEqual(filing.facts[0].concept_local_name, "Revenues")
+        self.assertEqual(filing.facts[0].scale, 6)
+        self.assertEqual(filing.facts[0].normalized_value, "100000000")
         self.assertEqual(filing.validation.validation_status, "pass")
 
 
@@ -144,6 +150,14 @@ class CanonicalFieldMappingTests(unittest.TestCase):
         self.assertEqual(data["fiscal_quarter"], 3)
         self.assertEqual(data["parser_warnings_inherited"], ["missing_cash_flow_facts"])
         self.assertEqual(data["fields"][0]["field_code"], "revenue")
+
+    def test_field_selector_prefers_normalized_value_when_available(self) -> None:
+        filing = load_periodic_report_filing(_write_scaled_periodic_fixture("mapping_scaled.json"))
+        fields = select_canonical_fields(filing)
+        field_by_code = {field.field_code: field for field in fields}
+
+        self.assertEqual(field_by_code["revenue"].value, "26914000000")
+        self.assertEqual(field_by_code["revenue"].source_facts[0].raw_value, "26,914")
 
 
 @classmethod
@@ -441,6 +455,61 @@ def _write_periodic_fixture(name: str) -> Path:
                             "severity": "warning"
                         }
                     ]
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    return path
+
+
+def _write_scaled_periodic_fixture(name: str) -> Path:
+    path = _workspace_file(name)
+    path.write_text(
+        json.dumps(
+            {
+                "schema_version": "0.1.0",
+                "accession_number": "0011",
+                "cik": "0001045810",
+                "form": "10-K",
+                "filing_date": "2026-02-25",
+                "report_period": "2026-01-31",
+                "parser_format": "inline_xbrl",
+                "source_path": "D:/data/ticker/nvda/normalized/10k/0011.json",
+                "facts": [
+                    {
+                        "accession_number": "0011",
+                        "cik": "0001045810",
+                        "ticker_workspace": "nvda",
+                        "filing_date": "2026-02-25",
+                        "form": "10-K",
+                        "concept_qname": "us-gaap:Revenues",
+                        "concept_local_name": "Revenues",
+                        "dimensions": {},
+                        "parser_format": "inline_xbrl",
+                        "source_path": "D:/data/source",
+                        "validation_status": "pass",
+                        "statement_hint": "income_statement",
+                        "report_period": "2026-01-31",
+                        "context_id": "c1",
+                        "period_start": "2025-02-01",
+                        "period_end": "2026-01-31",
+                        "unit": "iso4217:USD",
+                        "decimals": "-3",
+                        "scale": 6,
+                        "scale_source": "inline_xbrl_attribute",
+                        "presentation_note": "Dollars in millions",
+                        "value": "26,914",
+                        "normalized_value": "26914000000"
+                    }
+                ],
+                "validation": {
+                    "accession_number": "0011",
+                    "filing_date": "2026-02-25",
+                    "form": "10-K",
+                    "parser_format": "inline_xbrl",
+                    "validation_status": "pass",
+                    "warnings": []
                 }
             }
         ),

@@ -29,6 +29,7 @@ Current status:
 - DuckDB schema creation, artifact ingestion, and query helpers are implemented
 
 See [docs/phase-01-architecture.md](docs/phase-01-architecture.md) for the architecture proposal.
+See [docs/phase-02-metric-signoff.md](docs/phase-02-metric-signoff.md) for the current validation/signoff workflow.
 
 Current package areas:
 - `src/metric_parser/ingest/`
@@ -91,5 +92,31 @@ ingest_company_artifact_directories(db_path, artifact_dirs)
 query = MetricQueryService(db_path)
 print(query.get_latest_metric('NVDA', 'free_cash_flow_margin'))
 print(query.get_metric_history('V', 'roe', 'annual')[-3:])
+'@ | python -
+```
+
+Metric signoff flow:
+
+```powershell
+$env:PYTHONPATH='src'
+@'
+from pathlib import Path
+from metric_parser import ValidationCompanyTarget, build_validation_report
+
+build_validation_report(
+    run_id='signoff-local',
+    company_targets=[
+        ValidationCompanyTarget('NVDA', [
+            r'D:\Projects\edgar-parser\_post2013_verify_20260329\catalog\filings.jsonl',
+            r'D:\Projects\edgar-parser\_modern_form_smokes_20260329\catalog\filings.jsonl',
+        ]),
+        ValidationCompanyTarget('AAPL', [r'D:\Projects\edgar-parser\_multi_verify_20260329\catalog\filings.jsonl']),
+        ValidationCompanyTarget('MSFT', [r'D:\Projects\edgar-parser\_multi_verify_20260329\catalog\filings.jsonl']),
+        ValidationCompanyTarget('BRK-B', [r'D:\Projects\edgar-parser\_multi_verify_20260329\catalog\filings.jsonl']),
+        ValidationCompanyTarget('OXY', [r'D:\Projects\edgar-parser\_multi_verify_20260329\catalog\filings.jsonl']),
+        ValidationCompanyTarget('V', [r'D:\Projects\edgar-parser\_multi_verify_20260329\catalog\filings.jsonl']),
+    ],
+    output_root=Path(r'D:\Projects\metric-parser\.tmp-tests\signoff'),
+)
 '@ | python -
 ```

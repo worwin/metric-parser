@@ -77,12 +77,12 @@ def _select_direct_field(definition: FieldDefinition, filing: PeriodicReportPars
         candidates = [
             fact
             for fact in filing.facts
-            if fact.concept_local_name == alias.concept_local_name and _coerce_numeric_text(fact.value) is not None
+            if fact.concept_local_name == alias.concept_local_name and _fact_numeric_value(fact) is not None
         ]
         if not candidates:
             continue
         chosen = max(candidates, key=lambda fact: _fact_preference_key(fact, filing, definition))
-        value = _coerce_numeric_text(chosen.value)
+        value = _fact_numeric_value(chosen)
         if value is None:
             continue
         warnings = list(alias.warnings)
@@ -180,7 +180,7 @@ def _resolve_period_start(filing: PeriodicReportParsedFiling) -> str | None:
     duration_candidates = [
         fact
         for fact in filing.facts
-        if fact.period_start and fact.period_end == filing.report_period and not fact.dimensions and _coerce_numeric_text(fact.value) is not None
+        if fact.period_start and fact.period_end == filing.report_period and not fact.dimensions and _fact_numeric_value(fact) is not None
     ]
     if not duration_candidates:
         return None
@@ -288,6 +288,13 @@ def _coerce_numeric_text(value: str | None) -> str | None:
     if number == number.to_integral():
         return str(number.quantize(Decimal('1')))
     return format(number.normalize(), 'f')
+
+
+def _fact_numeric_value(fact: PeriodicReportFactRecord) -> str | None:
+    normalized = _coerce_numeric_text(fact.normalized_value)
+    if normalized is not None:
+        return normalized
+    return _coerce_numeric_text(fact.value)
 
 
 def _duration_days(period_start: str | None, period_end: str | None) -> int:

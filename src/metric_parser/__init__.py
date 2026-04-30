@@ -57,6 +57,15 @@ from metric_parser.schema_registry import (
     list_schema_names,
     load_schema,
 )
+from metric_parser.validation import (
+    MetricPeriodSignoff,
+    MetricSignoffRecord,
+    ValidationCompanyTarget,
+    ValidationReport,
+    build_validation_report,
+    write_validation_markdown,
+    write_validation_report,
+)
 
 __all__ = [
     'CanonicalFieldRecord',
@@ -72,11 +81,15 @@ __all__ = [
     'MetricSourceFact',
     'MetricWarningRecord',
     'MetricsBundleArtifact',
+    'MetricPeriodSignoff',
+    'MetricSignoffRecord',
     'PeriodArtifactIdentity',
     'PeriodFieldsArtifact',
     'PeriodicReportFactRecord',
     'PeriodicReportParsedFiling',
     'SCHEMA_VERSION',
+    'ValidationCompanyTarget',
+    'ValidationReport',
     'build_company_metric_history',
     'build_company_metric_history_from_catalog_path',
     'build_metric_histories_from_catalog_path',
@@ -94,10 +107,13 @@ __all__ = [
     'ingest_company_artifact_directories',
     'ingest_company_artifact_directory',
     'list_schema_names',
+    'build_validation_report',
     'load_catalog_records',
     'load_periodic_report_filing',
     'load_schema',
     'select_canonical_fields',
     'select_preferred_periodic_records',
+    'write_validation_markdown',
+    'write_validation_report',
     'write_company_metric_artifacts',
 ]

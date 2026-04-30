@@ -122,10 +122,14 @@ class PeriodicReportFactRecord:
     context_id: str | None = None
     unit: str | None = None
     decimals: str | None = None
+    scale: int | None = None
+    scale_source: str | None = None
+    presentation_note: str | None = None
     period_start: str | None = None
     period_end: str | None = None
     instant: str | None = None
     value: str | None = None
+    normalized_value: str | None = None
     statement_hint: str | None = None
 
     @classmethod
@@ -147,10 +151,14 @@ class PeriodicReportFactRecord:
             context_id=data.get("context_id"),
             unit=data.get("unit"),
             decimals=data.get("decimals"),
+            scale=data.get("scale"),
+            scale_source=data.get("scale_source"),
+            presentation_note=data.get("presentation_note"),
             period_start=data.get("period_start"),
             period_end=data.get("period_end"),
             instant=data.get("instant"),
             value=data.get("value"),
+            normalized_value=data.get("normalized_value"),
             statement_hint=data.get("statement_hint"),
         )
 
