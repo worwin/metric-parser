@@ -15,6 +15,32 @@ from metric_parser.models import MetricsBundleArtifact
 from metric_parser.models import PeriodFieldsArtifact
 
 
+FIELD_VALUE_METRICS: dict[str, str] = {
+    "revenue": "revenue",
+    "gross_profit": "gross_profit",
+    "cost_of_revenue": "cost_of_revenue",
+    "selling_general_and_administrative": "selling_general_and_administrative",
+    "research_and_development": "research_and_development",
+    "operating_expenses": "operating_expenses",
+    "other_income_expense": "other_income_expense",
+    "operating_cash_flow": "operating_cash_flow",
+    "cash_from_investing": "cash_from_investing",
+    "cash_from_financing": "cash_from_financing",
+    "net_change_in_cash": "net_change_in_cash",
+    "capital_expenditures": "capital_expenditures_proxy",
+    "total_assets": "total_assets",
+    "total_liabilities": "total_liabilities",
+    "total_equity": "total_equity",
+    "inventory": "inventory",
+    "property_plant_equipment": "property_plant_equipment",
+    "treasury_stock": "treasury_stock",
+    "share_repurchases": "share_repurchases",
+    "stock_issuance": "stock_issuance",
+    "debt_issuance": "debt_issuance",
+    "debt_repayment": "debt_repayment",
+}
+
+
 @dataclass(frozen=True, slots=True)
 class ComparisonContext:
     previous_period: PeriodFieldsArtifact | None = None
@@ -95,8 +121,8 @@ def _compute_metric_record(
     value: str | None = None
     applicability = "applicable"
 
-    if metric_code == "revenue":
-        value, source_fields, warnings = _field_value_result(field_map, "revenue")
+    if metric_code in FIELD_VALUE_METRICS:
+        value, source_fields, warnings = _field_value_result(field_map, FIELD_VALUE_METRICS[metric_code])
     elif metric_code == "revenue_growth":
         value, source_fields, warnings = _growth_result(field_map.get("revenue"), prior_comparable_map.get("revenue"))
     elif metric_code == "net_income_growth":
@@ -117,14 +143,28 @@ def _compute_metric_record(
     elif metric_code == "net_margin":
         value, warnings = _ratio_result(field_map.get("net_income"), field_map.get("revenue"))
         source_fields = _used_fields(field_map.get("net_income"), field_map.get("revenue"))
+    elif metric_code == "operating_expenses_to_gross_profit":
+        value, warnings = _ratio_result(field_map.get("operating_expenses"), field_map.get("gross_profit"))
+        source_fields = _used_fields(field_map.get("operating_expenses"), field_map.get("gross_profit"))
+    elif metric_code == "sga_to_gross_profit":
+        value, warnings = _ratio_result(field_map.get("selling_general_and_administrative"), field_map.get("gross_profit"))
+        source_fields = _used_fields(field_map.get("selling_general_and_administrative"), field_map.get("gross_profit"))
+    elif metric_code == "r_and_d_to_gross_profit":
+        value, warnings = _ratio_result(field_map.get("research_and_development"), field_map.get("gross_profit"))
+        source_fields = _used_fields(field_map.get("research_and_development"), field_map.get("gross_profit"))
+    elif metric_code == "depreciation_to_gross_profit":
+        value, warnings = _ratio_result(field_map.get("depreciation_and_amortization"), field_map.get("gross_profit"))
+        source_fields = _used_fields(field_map.get("depreciation_and_amortization"), field_map.get("gross_profit"))
+    elif metric_code == "interest_expense_to_operating_income":
+        value, source_fields, warnings = _absolute_numerator_ratio_result(field_map.get("interest_expense"), field_map.get("operating_income"))
+    elif metric_code == "tax_rate_effective":
+        value, source_fields, warnings = _effective_tax_rate(field_map)
     elif metric_code == "roe":
         value, source_fields, warnings = _return_metric_result(fields_artifact, field_map, previous_field_map, "net_income", "total_equity")
     elif metric_code == "roa":
         value, source_fields, warnings = _return_metric_result(fields_artifact, field_map, previous_field_map, "net_income", "total_assets")
     elif metric_code == "roic":
         value, source_fields, warnings = _roic_result(fields_artifact, field_map, previous_field_map)
-    elif metric_code == "operating_cash_flow":
-        value, source_fields, warnings = _field_value_result(field_map, "operating_cash_flow")
     elif metric_code == "free_cash_flow":
         value, source_fields, warnings = _difference_result(field_map.get("operating_cash_flow"), field_map.get("capital_expenditures_proxy"))
     elif metric_code == "free_cash_flow_growth":
@@ -146,6 +186,9 @@ def _compute_metric_record(
         value, warnings = _ratio_from_values(fcf_value, _field_value(field_map.get("net_income")))
         source_fields = fcf_fields + _used_fields(field_map.get("net_income"))
         warnings = fcf_warnings + warnings
+    elif metric_code == "capex_to_net_income":
+        value, warnings = _ratio_result(field_map.get("capital_expenditures_proxy"), field_map.get("net_income"))
+        source_fields = _used_fields(field_map.get("capital_expenditures_proxy"), field_map.get("net_income"))
     elif metric_code == "free_cash_flow_per_share":
         fcf_value, fcf_fields, fcf_warnings = _difference_result(field_map.get("operating_cash_flow"), field_map.get("capital_expenditures_proxy"))
         share_field, share_warnings = _share_base_field(field_map)
@@ -185,6 +228,37 @@ def _compute_metric_record(
         warnings = current_warnings
     elif metric_code == "retained_earnings_growth":
         value, source_fields, warnings = _growth_result(field_map.get("retained_earnings"), prior_comparable_map.get("retained_earnings"))
+    elif metric_code == "debt_to_equity":
+        value, warnings = _ratio_result(field_map.get("total_debt"), field_map.get("total_equity"))
+        source_fields = _used_fields(field_map.get("total_debt"), field_map.get("total_equity"))
+    elif metric_code == "adjusted_debt_to_equity":
+        denominator, denominator_fields, denominator_warnings = _adjusted_equity_value(field_map)
+        value, warnings = _ratio_from_values(_field_value(field_map.get("total_debt")), denominator)
+        source_fields = _used_fields(field_map.get("total_debt")) + denominator_fields
+        warnings = denominator_warnings + warnings
+    elif metric_code == "years_to_pay_long_term_debt":
+        value, warnings = _ratio_result(field_map.get("debt_noncurrent"), field_map.get("net_income"))
+        source_fields = _used_fields(field_map.get("debt_noncurrent"), field_map.get("net_income"))
+    elif metric_code == "intangibles_to_assets":
+        intangible_value = _sum_values(_field_value(field_map.get("goodwill")), _field_value(field_map.get("intangible_assets_excluding_goodwill")))
+        value, warnings = _ratio_from_values(intangible_value, _field_value(field_map.get("total_assets")))
+        source_fields = _used_fields(field_map.get("goodwill"), field_map.get("intangible_assets_excluding_goodwill"), field_map.get("total_assets"))
+    elif metric_code == "ppe_to_assets":
+        value, warnings = _ratio_result(field_map.get("property_plant_equipment"), field_map.get("total_assets"))
+        source_fields = _used_fields(field_map.get("property_plant_equipment"), field_map.get("total_assets"))
+    elif metric_code == "ppe_to_net_income":
+        value, warnings = _ratio_result(field_map.get("property_plant_equipment"), field_map.get("net_income"))
+        source_fields = _used_fields(field_map.get("property_plant_equipment"), field_map.get("net_income"))
+    elif metric_code == "debt_to_ppe":
+        value, warnings = _ratio_result(field_map.get("total_debt"), field_map.get("property_plant_equipment"))
+        source_fields = _used_fields(field_map.get("total_debt"), field_map.get("property_plant_equipment"))
+    elif metric_code == "receivables_to_revenue":
+        value, warnings = _ratio_result(field_map.get("accounts_receivable_net"), field_map.get("revenue"))
+        source_fields = _used_fields(field_map.get("accounts_receivable_net"), field_map.get("revenue"))
+    elif metric_code == "inventory_growth":
+        value, source_fields, warnings = _growth_result(field_map.get("inventory"), prior_comparable_map.get("inventory"))
+    elif metric_code == "goodwill_growth":
+        value, source_fields, warnings = _growth_result(field_map.get("goodwill"), prior_comparable_map.get("goodwill"))
     elif metric_code == "debt_to_capital":
         total_debt = field_map.get("total_debt")
         total_equity = field_map.get("total_equity")
@@ -221,6 +295,10 @@ def _compute_metric_record(
         source_fields = _used_fields(field_map.get("cash_and_equivalents"), field_map.get("short_term_investments"), field_map.get("accounts_receivable_net"), field_map.get("current_liabilities"))
     elif metric_code == "share_count_trend":
         value, source_fields, warnings = _growth_result(field_map.get("shares_outstanding_end"), prior_comparable_map.get("shares_outstanding_end"))
+    elif metric_code == "net_stock_issuance_or_retirement":
+        value, source_fields, warnings = _difference_result(field_map.get("stock_issuance"), field_map.get("share_repurchases"))
+    elif metric_code == "net_debt_issuance_or_retirement":
+        value, source_fields, warnings = _difference_result(field_map.get("debt_issuance"), field_map.get("debt_repayment"))
     elif metric_code == "dividend_growth":
         value, source_fields, warnings = _growth_result(field_map.get("dividends_common_cash"), prior_comparable_map.get("dividends_common_cash"))
     elif metric_code == "dividend_payout_ratio":
@@ -315,6 +393,24 @@ def _ratio_from_values(numerator: str | None, denominator: str | None) -> tuple[
         return None, ["negative_or_zero_denominator"]
     value = numerator_decimal / denominator_decimal
     return _decimal_text(value), []
+
+
+def _absolute_numerator_ratio_result(
+    numerator: CanonicalFieldRecord | None,
+    denominator: CanonicalFieldRecord | None,
+) -> tuple[str | None, list[CanonicalFieldRecord], list[str]]:
+    numerator_value = _field_value(numerator)
+    warnings: list[str] = []
+    if numerator_value is None:
+        return None, _used_fields(numerator, denominator), ["missing_required_source_fact"]
+    try:
+        numerator_decimal = Decimal(numerator_value)
+    except InvalidOperation:
+        return None, _used_fields(numerator, denominator), ["non_numeric_source_fact"]
+    if numerator_decimal < 0:
+        warnings.append("absolute_value_used")
+    value, ratio_warnings = _ratio_from_values(_decimal_text(abs(numerator_decimal)), _field_value(denominator))
+    return value, _used_fields(numerator, denominator), list(numerator.warnings if numerator is not None else []) + warnings + ratio_warnings
 
 
 def _difference_result(minuend: CanonicalFieldRecord | None, subtrahend: CanonicalFieldRecord | None) -> tuple[str | None, list[CanonicalFieldRecord], list[str]]:
@@ -579,6 +675,25 @@ def _net_debt_result(field_map: dict[str, CanonicalFieldRecord]) -> tuple[str | 
         warnings.append("partial_cash_offsets_used_in_net_debt")
     offset_value = _sum_values(_field_value(cash_and_equivalents), _field_value(short_term_investments))
     return _subtract(debt_value, offset_value), source_fields, warnings
+
+
+def _adjusted_equity_value(field_map: dict[str, CanonicalFieldRecord]) -> tuple[str | None, list[CanonicalFieldRecord], list[str]]:
+    total_equity = field_map.get("total_equity")
+    treasury_stock = field_map.get("treasury_stock")
+    equity_value = _field_value(total_equity)
+    source_fields = _used_fields(total_equity, treasury_stock)
+    if equity_value is None:
+        return None, source_fields, ["missing_required_source_fact"]
+
+    treasury_value = _field_value(treasury_stock)
+    if treasury_value is None:
+        return equity_value, source_fields, ["treasury_stock_unavailable_used_total_equity"]
+
+    try:
+        adjusted = Decimal(equity_value) + abs(Decimal(treasury_value))
+    except InvalidOperation:
+        return equity_value, source_fields, ["non_numeric_source_fact"]
+    return _decimal_text(adjusted), source_fields, []
 
 
 def _tangible_capital_value(field_map: dict[str, CanonicalFieldRecord]) -> tuple[str | None, list[CanonicalFieldRecord], list[str]]:

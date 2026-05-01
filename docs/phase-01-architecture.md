@@ -83,6 +83,12 @@ Observed periodic output shape:
   - `cash_flow_statement`
 - `validation` gives filing-level parse quality and warnings
 
+Downstream selection should treat `facts[]` as authoritative. The grouped
+`statements` payload and `statement_hint` values are useful context and ranking
+signals, but they are not completeness boundaries. Some valid equity-table or
+financing facts, such as repurchases, can remain outside a statement bucket and
+still be eligible for canonical field mapping.
+
 Observed modern sample sizes:
 - NVDA `10-K`: 1305 facts, 23 income rows, 64 balance-sheet rows, 6 cash-flow rows
 - NVDA `10-Q`: 1058 facts, 20 income rows, 41 balance-sheet rows, 5 cash-flow rows

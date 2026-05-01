@@ -159,6 +159,27 @@ class CanonicalFieldMappingTests(unittest.TestCase):
         self.assertEqual(field_by_code["revenue"].value, "26914000000")
         self.assertEqual(field_by_code["revenue"].source_facts[0].raw_value, "26,914")
 
+    def test_field_selector_maps_expanded_buffett_fundamentals_from_facts(self) -> None:
+        filing = load_periodic_report_filing(_write_expanded_buffett_fixture("mapping_expanded.json"))
+        fields = select_canonical_fields(filing)
+        field_by_code = {field.field_code: field for field in fields}
+
+        self.assertEqual(field_by_code["selling_general_and_administrative"].value, "120")
+        self.assertEqual(field_by_code["research_and_development"].value, "80")
+        self.assertEqual(field_by_code["operating_expenses"].value, "200")
+        self.assertEqual(field_by_code["other_income_expense"].value, "-5")
+        self.assertEqual(field_by_code["inventory"].value, "140")
+        self.assertEqual(field_by_code["property_plant_equipment"].value, "300")
+        self.assertEqual(field_by_code["total_liabilities"].value, "400")
+        self.assertEqual(field_by_code["treasury_stock"].value, "-100")
+        self.assertEqual(field_by_code["cash_from_investing"].value, "-70")
+        self.assertEqual(field_by_code["cash_from_financing"].value, "-20")
+        self.assertEqual(field_by_code["net_change_in_cash"].value, "170")
+        self.assertEqual(field_by_code["share_repurchases"].value, "50")
+        self.assertEqual(field_by_code["share_repurchases"].source_facts[0].concept_local_name, "StockRepurchasedAndRetiredDuringPeriodValue")
+        self.assertEqual(field_by_code["debt_issuance"].value, "70")
+        self.assertEqual(field_by_code["debt_repayment"].value, "40")
+
 
 @classmethod
 def tearDownClass(cls) -> None:
@@ -511,6 +532,87 @@ def _write_scaled_periodic_fixture(name: str) -> Path:
                     "validation_status": "pass",
                     "warnings": []
                 }
+            }
+        ),
+        encoding="utf-8",
+    )
+    return path
+
+
+def _write_expanded_buffett_fixture(name: str) -> Path:
+    path = _workspace_file(name)
+    fact_specs = [
+        ("SellingGeneralAndAdministrativeExpense", "income_statement", "duration", "120"),
+        ("ResearchAndDevelopmentExpense", "income_statement", "duration", "80"),
+        ("OperatingExpenses", "income_statement", "duration", "200"),
+        ("OtherIncomeExpenseNet", "income_statement", "duration", "(5)"),
+        ("InventoryNet", "balance_sheet", "instant", "140"),
+        ("PrepaidExpenseCurrent", "balance_sheet", "instant", "15"),
+        ("OtherCurrentAssets", "balance_sheet", "instant", "25"),
+        ("PropertyPlantAndEquipmentNet", "balance_sheet", "instant", "300"),
+        ("Liabilities", "balance_sheet", "instant", "400"),
+        ("NoncontrollingInterestInConsolidatedEntity", "balance_sheet", "instant", "10"),
+        ("OtherLiabilitiesNoncurrent", "balance_sheet", "instant", "35"),
+        ("PreferredStockValue", "balance_sheet", "instant", "5"),
+        ("CommonStockValue", "balance_sheet", "instant", "1"),
+        ("AdditionalPaidInCapital", "balance_sheet", "instant", "250"),
+        ("TreasuryStockValue", "balance_sheet", "instant", "(100)"),
+        ("NetCashProvidedByUsedInInvestingActivities", "cash_flow", "duration", "(70)"),
+        ("NetCashProvidedByUsedInFinancingActivities", "cash_flow", "duration", "(20)"),
+        ("CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalentsPeriodIncreaseDecreaseIncludingExchangeRateEffect", "cash_flow", "duration", "170"),
+        ("StockRepurchasedAndRetiredDuringPeriodValue", None, "duration", "50"),
+        ("ProceedsFromIssuanceOfCommonStock", "cash_flow", "duration", "10"),
+        ("ProceedsFromIssuanceOfLongTermDebt", "cash_flow", "duration", "70"),
+        ("RepaymentsOfLongTermDebt", "cash_flow", "duration", "40"),
+    ]
+    facts = []
+    for index, (concept, hint, period_kind, value) in enumerate(fact_specs, start=1):
+        fact = {
+            "accession_number": "0012",
+            "cik": "0000999",
+            "ticker_workspace": "example",
+            "filing_date": "2026-02-20",
+            "form": "10-K",
+            "concept_qname": f"us-gaap:{concept}",
+            "concept_local_name": concept,
+            "dimensions": {},
+            "parser_format": "inline_xbrl",
+            "source_path": "D:/data/source",
+            "validation_status": "pass",
+            "report_period": "2025-12-31",
+            "context_id": f"expanded-{index}",
+            "unit": "iso4217:USD",
+            "value": value,
+        }
+        if hint is not None:
+            fact["statement_hint"] = hint
+        if period_kind == "duration":
+            fact["period_start"] = "2025-01-01"
+            fact["period_end"] = "2025-12-31"
+        else:
+            fact["instant"] = "2025-12-31"
+        facts.append(fact)
+
+    path.write_text(
+        json.dumps(
+            {
+                "schema_version": "0.1.0",
+                "accession_number": "0012",
+                "cik": "0000999",
+                "form": "10-K",
+                "filing_date": "2026-02-20",
+                "report_period": "2025-12-31",
+                "parser_format": "inline_xbrl",
+                "source_path": "D:/data/ticker/example/normalized/10k/0012.json",
+                "facts": facts,
+                "validation": {
+                    "accession_number": "0012",
+                    "filing_date": "2026-02-20",
+                    "form": "10-K",
+                    "parser_format": "inline_xbrl",
+                    "validation_status": "pass",
+                    "warnings": [],
+                },
             }
         ),
         encoding="utf-8",

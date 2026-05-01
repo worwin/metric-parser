@@ -109,23 +109,39 @@ class MetricComputationTests(unittest.TestCase):
             income_before_tax="240",
             income_tax_expense="40",
             interest_expense="-20",
+            selling_general_and_administrative="120",
+            research_and_development="80",
+            operating_expenses="200",
+            other_income_expense="5",
             operating_cash_flow="260",
+            cash_from_investing="-70",
+            cash_from_financing="-20",
+            net_change_in_cash="170",
             capital_expenditures_proxy="60",
             depreciation_and_amortization="30",
             dividends_common_cash="40",
+            share_repurchases="50",
+            stock_issuance="10",
+            debt_issuance="70",
+            debt_repayment="40",
             weighted_avg_shares_basic="102",
             weighted_avg_shares_diluted="104",
             total_assets="1200",
+            total_liabilities="400",
             total_equity="800",
             retained_earnings="500",
             current_assets="500",
             current_liabilities="250",
+            inventory="140",
             cash_and_equivalents="120",
             short_term_investments="80",
             accounts_receivable_net="90",
+            property_plant_equipment="300",
             goodwill="50",
             intangible_assets_excluding_goodwill="30",
+            treasury_stock="-100",
             shares_outstanding_end="100",
+            debt_noncurrent="240",
             total_debt="300",
         )
         prior = _annual_artifact(
@@ -138,23 +154,39 @@ class MetricComputationTests(unittest.TestCase):
             income_before_tax="205",
             income_tax_expense="35",
             interest_expense="-18",
+            selling_general_and_administrative="110",
+            research_and_development="70",
+            operating_expenses="180",
+            other_income_expense="4",
             operating_cash_flow="220",
+            cash_from_investing="-60",
+            cash_from_financing="-15",
+            net_change_in_cash="145",
             capital_expenditures_proxy="55",
             depreciation_and_amortization="28",
             dividends_common_cash="35",
+            share_repurchases="45",
+            stock_issuance="12",
+            debt_issuance="65",
+            debt_repayment="35",
             weighted_avg_shares_basic="108",
             weighted_avg_shares_diluted="110",
             total_assets="1000",
+            total_liabilities="300",
             total_equity="700",
             retained_earnings="400",
             current_assets="450",
             current_liabilities="230",
+            inventory="125",
             cash_and_equivalents="110",
             short_term_investments="70",
             accounts_receivable_net="85",
+            property_plant_equipment="280",
             goodwill="55",
             intangible_assets_excluding_goodwill="35",
+            treasury_stock="-80",
             shares_outstanding_end="110",
+            debt_noncurrent="230",
             total_debt="280",
         )
 
@@ -169,6 +201,13 @@ class MetricComputationTests(unittest.TestCase):
         self.assertEqual(_q(metric_by_code["book_value_per_share"].value), Decimal("8"))
         self.assertEqual(_q(metric_by_code["tangible_book_value_per_share"].value), Decimal("7.2"))
         self.assertEqual(_q(metric_by_code["owners_earnings_approx"].value), Decimal("170"))
+        self.assertEqual(_q(metric_by_code["operating_expenses_to_gross_profit"].value), Decimal("0.3333333333333333333333333333"))
+        self.assertEqual(_q(metric_by_code["sga_to_gross_profit"].value), Decimal("0.2"))
+        self.assertEqual(_q(metric_by_code["r_and_d_to_gross_profit"].value), Decimal("0.1333333333333333333333333333"))
+        self.assertEqual(_q(metric_by_code["depreciation_to_gross_profit"].value), Decimal("0.05"))
+        self.assertEqual(_q(metric_by_code["interest_expense_to_operating_income"].value), Decimal("0.08"))
+        self.assertEqual(_q(metric_by_code["tax_rate_effective"].value), Decimal("0.1666666666666666666666666667"))
+        self.assertEqual(_q(metric_by_code["capex_to_net_income"].value), Decimal("0.3"))
         self.assertEqual(_q(metric_by_code["roic"].value), Decimal("0.2450980392156862745098039215"))
         self.assertEqual(_q(metric_by_code["cash_conversion_ocf_to_net_income"].value), Decimal("1.3"))
         self.assertEqual(_q(metric_by_code["cash_conversion_fcf_to_net_income"].value), Decimal("1"))
@@ -180,6 +219,18 @@ class MetricComputationTests(unittest.TestCase):
         self.assertEqual(_q(metric_by_code["net_debt"].value), Decimal("100"))
         self.assertEqual(_q(metric_by_code["net_debt_to_fcf"].value), Decimal("0.5"))
         self.assertEqual(_q(metric_by_code["debt_payback_years"].value), Decimal("1.5"))
+        self.assertEqual(_q(metric_by_code["debt_to_equity"].value), Decimal("0.375"))
+        self.assertEqual(_q(metric_by_code["adjusted_debt_to_equity"].value), Decimal("0.3333333333333333333333333333"))
+        self.assertEqual(_q(metric_by_code["years_to_pay_long_term_debt"].value), Decimal("1.2"))
+        self.assertEqual(_q(metric_by_code["intangibles_to_assets"].value), Decimal("0.06666666666666666666666666667"))
+        self.assertEqual(_q(metric_by_code["ppe_to_assets"].value), Decimal("0.25"))
+        self.assertEqual(_q(metric_by_code["ppe_to_net_income"].value), Decimal("1.5"))
+        self.assertEqual(_q(metric_by_code["debt_to_ppe"].value), Decimal("1"))
+        self.assertEqual(_q(metric_by_code["receivables_to_revenue"].value), Decimal("0.09"))
+        self.assertEqual(_q(metric_by_code["inventory_growth"].value), Decimal("0.12"))
+        self.assertEqual(_q(metric_by_code["goodwill_growth"].value), Decimal("-0.0909090909090909090909090909"))
+        self.assertEqual(_q(metric_by_code["net_stock_issuance_or_retirement"].value), Decimal("-40"))
+        self.assertEqual(_q(metric_by_code["net_debt_issuance_or_retirement"].value), Decimal("30"))
         self.assertEqual(_q(metric_by_code["retained_earnings_growth"].value), Decimal("0.25"))
         self.assertEqual(_q(metric_by_code["return_on_tangible_capital"].value), Decimal("0.3759398496240601503759398496"))
         self.assertEqual(_q(metric_by_code["dividend_growth"].value), Decimal("0.142857142857142857142857143"))
