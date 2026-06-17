@@ -8,9 +8,19 @@ from metric_parser.db.schema import connect_duckdb
 
 class MetricQueryService:
     def __init__(self, database_path: str | Path):
+        """Handle init  .
+        
+        Args:
+            database_path: The database_path value.
+        """
         self.database_path = Path(database_path)
 
     def list_companies(self) -> list[dict[str, Any]]:
+        """List companies.
+        
+        Returns:
+            The computed result.
+        """
         return self._fetch_all(
             """
             SELECT cik, ticker, company_name, annual_period_count, quarterly_period_count
@@ -20,6 +30,15 @@ class MetricQueryService:
         )
 
     def get_annual_metrics(self, ticker: str, metric_code: str | None = None) -> list[dict[str, Any]]:
+        """Return get annual metrics.
+        
+        Args:
+            ticker: The ticker value.
+            metric_code: The metric_code value.
+        
+        Returns:
+            The computed result.
+        """
         sql = "SELECT * FROM metrics_annual WHERE ticker = ?"
         params: list[Any] = [ticker.upper()]
         if metric_code is not None:
@@ -29,6 +48,15 @@ class MetricQueryService:
         return self._fetch_all(sql, params)
 
     def get_quarterly_metrics(self, ticker: str, metric_code: str | None = None) -> list[dict[str, Any]]:
+        """Return get quarterly metrics.
+        
+        Args:
+            ticker: The ticker value.
+            metric_code: The metric_code value.
+        
+        Returns:
+            The computed result.
+        """
         sql = "SELECT * FROM metrics_quarterly WHERE ticker = ?"
         params: list[Any] = [ticker.upper()]
         if metric_code is not None:
@@ -38,6 +66,16 @@ class MetricQueryService:
         return self._fetch_all(sql, params)
 
     def get_metric_history(self, ticker: str, metric_code: str, period_type: str) -> list[dict[str, Any]]:
+        """Return get metric history.
+        
+        Args:
+            ticker: The ticker value.
+            metric_code: The metric_code value.
+            period_type: The period_type value.
+        
+        Returns:
+            The computed result.
+        """
         table_name = _metric_table_name(period_type)
         return self._fetch_all(
             f"""
@@ -51,6 +89,15 @@ class MetricQueryService:
         )
 
     def get_latest_metric(self, ticker: str, metric_code: str) -> dict[str, Any] | None:
+        """Return get latest metric.
+        
+        Args:
+            ticker: The ticker value.
+            metric_code: The metric_code value.
+        
+        Returns:
+            The computed result.
+        """
         rows = self._fetch_all(
             """
             SELECT *
@@ -68,6 +115,14 @@ class MetricQueryService:
         return rows[0] if rows else None
 
     def get_metric_warnings(self, ticker: str) -> list[dict[str, Any]]:
+        """Return get metric warnings.
+        
+        Args:
+            ticker: The ticker value.
+        
+        Returns:
+            The computed result.
+        """
         return self._fetch_all(
             """
             SELECT ticker, filing_period, fiscal_year, fiscal_quarter, period_type, metric_code,
@@ -80,6 +135,14 @@ class MetricQueryService:
         )
 
     def get_metric_lineage(self, metric_record_id: str) -> list[dict[str, Any]]:
+        """Return get metric lineage.
+        
+        Args:
+            metric_record_id: The metric_record_id value.
+        
+        Returns:
+            The computed result.
+        """
         return self._fetch_all(
             """
             SELECT metric_record_id, source_accession, source_form, concept_local_name, concept_qname,
@@ -92,6 +155,14 @@ class MetricQueryService:
         )
 
     def get_source_filings_for_metric_record(self, metric_record_id: str) -> list[dict[str, Any]]:
+        """Return get source filings for metric record.
+        
+        Args:
+            metric_record_id: The metric_record_id value.
+        
+        Returns:
+            The computed result.
+        """
         return self._fetch_all(
             """
             SELECT DISTINCT filings.accession_number AS source_accession, filings.ticker, filings.company_name, filings.form,
@@ -105,9 +176,27 @@ class MetricQueryService:
         )
 
     def query_sql(self, sql: str, params: list[Any] | None = None) -> list[dict[str, Any]]:
+        """Handle query sql.
+        
+        Args:
+            sql: The sql value.
+            params: The params value.
+        
+        Returns:
+            The computed result.
+        """
         return self._fetch_all(sql, params or [])
 
     def _fetch_all(self, sql: str, params: list[Any] | None = None) -> list[dict[str, Any]]:
+        """Handle fetch all.
+        
+        Args:
+            sql: The sql value.
+            params: The params value.
+        
+        Returns:
+            The computed result.
+        """
         connection = connect_duckdb(self.database_path)
         try:
             cursor = connection.execute(sql, params or [])
@@ -118,6 +207,14 @@ class MetricQueryService:
 
 
 def _metric_table_name(period_type: str) -> str:
+    """Handle metric table name.
+    
+    Args:
+        period_type: The period_type value.
+    
+    Returns:
+        The computed result.
+    """
     normalized = period_type.lower()
     if normalized == 'annual':
         return 'metrics_annual'
