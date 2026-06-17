@@ -53,6 +53,17 @@ def compute_metrics_bundle(
     comparison: ComparisonContext | None = None,
     created_at: str | None = None,
 ) -> MetricsBundleArtifact:
+    """Compute all registered metrics for a canonical period artifact.
+    
+    Args:
+        run_id: The run_id value.
+        fields_artifact: The fields_artifact value.
+        comparison: The comparison value.
+        created_at: The created_at value.
+    
+    Returns:
+        The computed result.
+    """
     if comparison is None:
         comparison = ComparisonContext()
     if created_at is None:
@@ -115,6 +126,20 @@ def _compute_metric_record(
     metric_code: str,
     created_at: str,
 ) -> MetricRecord:
+    """Compute one metric record and attach lineage, confidence, and warnings.
+    
+    Args:
+        run_id: The run_id value.
+        fields_artifact: The fields_artifact value.
+        field_map: The field_map value.
+        previous_field_map: The previous_field_map value.
+        prior_comparable_map: The prior_comparable_map value.
+        metric_code: The metric_code value.
+        created_at: The created_at value.
+    
+    Returns:
+        The computed result.
+    """
     definition = METRIC_DEFINITION_BY_CODE[metric_code]
     warnings: list[str] = []
     source_fields: list[CanonicalFieldRecord] = []
@@ -365,12 +390,29 @@ def _compute_metric_record(
 
 
 def _field_map(artifact: PeriodFieldsArtifact | None) -> dict[str, CanonicalFieldRecord]:
+    """Handle field map.
+    
+    Args:
+        artifact: The artifact value.
+    
+    Returns:
+        The computed result.
+    """
     if artifact is None:
         return {}
     return {field.field_code: field for field in artifact.fields}
 
 
 def _field_value_result(field_map: dict[str, CanonicalFieldRecord], field_code: str) -> tuple[str | None, list[CanonicalFieldRecord], list[str]]:
+    """Handle field value result.
+    
+    Args:
+        field_map: The field_map value.
+        field_code: The field_code value.
+    
+    Returns:
+        The computed result.
+    """
     field = field_map.get(field_code)
     if field is None or field.value is None:
         return None, [], ["missing_required_source_fact"]
@@ -378,10 +420,28 @@ def _field_value_result(field_map: dict[str, CanonicalFieldRecord], field_code: 
 
 
 def _ratio_result(numerator: CanonicalFieldRecord | None, denominator: CanonicalFieldRecord | None) -> tuple[str | None, list[str]]:
+    """Handle ratio result.
+    
+    Args:
+        numerator: The numerator value.
+        denominator: The denominator value.
+    
+    Returns:
+        The computed result.
+    """
     return _ratio_from_values(_field_value(numerator), _field_value(denominator))
 
 
 def _ratio_from_values(numerator: str | None, denominator: str | None) -> tuple[str | None, list[str]]:
+    """Handle ratio from values.
+    
+    Args:
+        numerator: The numerator value.
+        denominator: The denominator value.
+    
+    Returns:
+        The computed result.
+    """
     if numerator is None or denominator is None:
         return None, ["missing_required_source_fact"]
     try:
@@ -399,6 +459,15 @@ def _absolute_numerator_ratio_result(
     numerator: CanonicalFieldRecord | None,
     denominator: CanonicalFieldRecord | None,
 ) -> tuple[str | None, list[CanonicalFieldRecord], list[str]]:
+    """Handle absolute numerator ratio result.
+    
+    Args:
+        numerator: The numerator value.
+        denominator: The denominator value.
+    
+    Returns:
+        The computed result.
+    """
     numerator_value = _field_value(numerator)
     warnings: list[str] = []
     if numerator_value is None:
@@ -414,17 +483,44 @@ def _absolute_numerator_ratio_result(
 
 
 def _difference_result(minuend: CanonicalFieldRecord | None, subtrahend: CanonicalFieldRecord | None) -> tuple[str | None, list[CanonicalFieldRecord], list[str]]:
+    """Handle difference result.
+    
+    Args:
+        minuend: The minuend value.
+        subtrahend: The subtrahend value.
+    
+    Returns:
+        The computed result.
+    """
     if minuend is None or subtrahend is None or minuend.value is None or subtrahend.value is None:
         return None, _used_fields(minuend, subtrahend), ["missing_required_source_fact"]
     return _subtract(minuend.value, subtrahend.value), _used_fields(minuend, subtrahend), list(minuend.warnings) + list(subtrahend.warnings)
 
 
 def _growth_result(current: CanonicalFieldRecord | None, prior: CanonicalFieldRecord | None) -> tuple[str | None, list[CanonicalFieldRecord], list[str]]:
+    """Handle growth result.
+    
+    Args:
+        current: The current value.
+        prior: The prior value.
+    
+    Returns:
+        The computed result.
+    """
     value, warnings = _growth_from_values(_field_value(current), _field_value(prior))
     return value, _used_fields(current, prior), warnings
 
 
 def _growth_from_values(current: str | None, prior: str | None) -> tuple[str | None, list[str]]:
+    """Handle growth from values.
+    
+    Args:
+        current: The current value.
+        prior: The prior value.
+    
+    Returns:
+        The computed result.
+    """
     if current is None or prior is None:
         return None, ["missing_prior_comparable"]
     try:
@@ -444,6 +540,18 @@ def _return_metric_result(
     income_code: str,
     balance_code: str,
 ) -> tuple[str | None, list[CanonicalFieldRecord], list[str]]:
+    """Handle return metric result.
+    
+    Args:
+        fields_artifact: The fields_artifact value.
+        field_map: The field_map value.
+        previous_field_map: The previous_field_map value.
+        income_code: The income_code value.
+        balance_code: The balance_code value.
+    
+    Returns:
+        The computed result.
+    """
     income_field = field_map.get(income_code)
     annualization_warnings: list[str] = []
     income_value = _field_value(income_field)
@@ -462,6 +570,16 @@ def _roic_result(
     field_map: dict[str, CanonicalFieldRecord],
     previous_field_map: dict[str, CanonicalFieldRecord],
 ) -> tuple[str | None, list[CanonicalFieldRecord], list[str]]:
+    """Handle roic result.
+    
+    Args:
+        fields_artifact: The fields_artifact value.
+        field_map: The field_map value.
+        previous_field_map: The previous_field_map value.
+    
+    Returns:
+        The computed result.
+    """
     operating_income = field_map.get("operating_income")
     operating_income_value = _field_value(operating_income)
     if operating_income_value is None:
@@ -496,6 +614,16 @@ def _return_on_tangible_capital_result(
     field_map: dict[str, CanonicalFieldRecord],
     previous_field_map: dict[str, CanonicalFieldRecord],
 ) -> tuple[str | None, list[CanonicalFieldRecord], list[str]]:
+    """Handle return on tangible capital result.
+    
+    Args:
+        fields_artifact: The fields_artifact value.
+        field_map: The field_map value.
+        previous_field_map: The previous_field_map value.
+    
+    Returns:
+        The computed result.
+    """
     operating_income = field_map.get("operating_income")
     operating_income_value = _field_value(operating_income)
     if operating_income_value is None:
@@ -519,6 +647,14 @@ def _return_on_tangible_capital_result(
 
 
 def _interest_coverage_result(field_map: dict[str, CanonicalFieldRecord]) -> tuple[str | None, list[CanonicalFieldRecord], list[str]]:
+    """Handle interest coverage result.
+    
+    Args:
+        field_map: The field_map value.
+    
+    Returns:
+        The computed result.
+    """
     operating_income = field_map.get("operating_income")
     interest_expense = field_map.get("interest_expense")
     interest_value = _field_value(interest_expense)
@@ -538,6 +674,15 @@ def _interest_coverage_result(field_map: dict[str, CanonicalFieldRecord]) -> tup
 
 
 def _average_balance(current: CanonicalFieldRecord | None, previous: CanonicalFieldRecord | None) -> tuple[str | None, list[str], list[CanonicalFieldRecord]]:
+    """Handle average balance.
+    
+    Args:
+        current: The current value.
+        previous: The previous value.
+    
+    Returns:
+        The computed result.
+    """
     current_value = _field_value(current)
     previous_value = _field_value(previous)
     if current_value is None:
@@ -552,6 +697,14 @@ def _average_balance(current: CanonicalFieldRecord | None, previous: CanonicalFi
 
 
 def _share_base_field(field_map: dict[str, CanonicalFieldRecord]) -> tuple[CanonicalFieldRecord | None, list[str]]:
+    """Handle share base field.
+    
+    Args:
+        field_map: The field_map value.
+    
+    Returns:
+        The computed result.
+    """
     diluted = field_map.get("weighted_avg_shares_diluted")
     if diluted is not None and diluted.value is not None:
         return diluted, []
@@ -565,6 +718,14 @@ def _share_base_field(field_map: dict[str, CanonicalFieldRecord]) -> tuple[Canon
 
 
 def _basic_share_field(field_map: dict[str, CanonicalFieldRecord]) -> tuple[CanonicalFieldRecord | None, list[str]]:
+    """Handle basic share field.
+    
+    Args:
+        field_map: The field_map value.
+    
+    Returns:
+        The computed result.
+    """
     basic = field_map.get("weighted_avg_shares_basic")
     if basic is not None and basic.value is not None:
         return basic, []
@@ -578,6 +739,14 @@ def _basic_share_field(field_map: dict[str, CanonicalFieldRecord]) -> tuple[Cano
 
 
 def _ending_share_field(field_map: dict[str, CanonicalFieldRecord]) -> tuple[CanonicalFieldRecord | None, list[str]]:
+    """Handle ending share field.
+    
+    Args:
+        field_map: The field_map value.
+    
+    Returns:
+        The computed result.
+    """
     ending = field_map.get("shares_outstanding_end")
     if ending is not None and ending.value is not None:
         return ending, []
@@ -591,18 +760,43 @@ def _ending_share_field(field_map: dict[str, CanonicalFieldRecord]) -> tuple[Can
 
 
 def _book_value_per_share_components(field_map: dict[str, CanonicalFieldRecord]) -> tuple[str | None, list[CanonicalFieldRecord], list[str]]:
+    """Handle book value per share components.
+    
+    Args:
+        field_map: The field_map value.
+    
+    Returns:
+        The computed result.
+    """
     share_field, share_warnings = _ending_share_field(field_map)
     value, warnings = _ratio_result(field_map.get("total_equity"), share_field)
     return value, _used_fields(field_map.get("total_equity"), share_field), share_warnings + warnings
 
 
 def _eps_components(field_map: dict[str, CanonicalFieldRecord], diluted: bool) -> tuple[str | None, list[CanonicalFieldRecord], list[str]]:
+    """Handle eps components.
+    
+    Args:
+        field_map: The field_map value.
+        diluted: The diluted value.
+    
+    Returns:
+        The computed result.
+    """
     share_field, share_warnings = _share_base_field(field_map) if diluted else _basic_share_field(field_map)
     value, warnings = _ratio_result(field_map.get("net_income"), share_field)
     return value, _used_fields(field_map.get("net_income"), share_field), share_warnings + warnings
 
 
 def _tangible_book_value_per_share_components(field_map: dict[str, CanonicalFieldRecord]) -> tuple[str | None, list[CanonicalFieldRecord], list[str]]:
+    """Handle tangible book value per share components.
+    
+    Args:
+        field_map: The field_map value.
+    
+    Returns:
+        The computed result.
+    """
     share_field, share_warnings = _ending_share_field(field_map)
     tangible_capital, tangible_fields, tangible_warnings = _tangible_capital_value(field_map)
     value, warnings = _ratio_from_values(tangible_capital, _field_value(share_field))
@@ -610,6 +804,14 @@ def _tangible_book_value_per_share_components(field_map: dict[str, CanonicalFiel
 
 
 def _effective_tax_rate(field_map: dict[str, CanonicalFieldRecord]) -> tuple[str | None, list[CanonicalFieldRecord], list[str]]:
+    """Handle effective tax rate.
+    
+    Args:
+        field_map: The field_map value.
+    
+    Returns:
+        The computed result.
+    """
     income_before_tax = field_map.get("income_before_tax")
     income_tax_expense = field_map.get("income_tax_expense")
     pretax_value = _field_value(income_before_tax)
@@ -633,6 +835,14 @@ def _effective_tax_rate(field_map: dict[str, CanonicalFieldRecord]) -> tuple[str
 
 
 def _invested_capital_value(field_map: dict[str, CanonicalFieldRecord]) -> tuple[str | None, list[CanonicalFieldRecord], list[str]]:
+    """Handle invested capital value.
+    
+    Args:
+        field_map: The field_map value.
+    
+    Returns:
+        The computed result.
+    """
     total_equity = field_map.get("total_equity")
     total_debt = field_map.get("total_debt")
     cash_and_equivalents = field_map.get("cash_and_equivalents")
@@ -658,6 +868,14 @@ def _invested_capital_value(field_map: dict[str, CanonicalFieldRecord]) -> tuple
 
 
 def _net_debt_result(field_map: dict[str, CanonicalFieldRecord]) -> tuple[str | None, list[CanonicalFieldRecord], list[str]]:
+    """Handle net debt result.
+    
+    Args:
+        field_map: The field_map value.
+    
+    Returns:
+        The computed result.
+    """
     total_debt = field_map.get("total_debt")
     cash_and_equivalents = field_map.get("cash_and_equivalents")
     short_term_investments = field_map.get("short_term_investments")
@@ -678,6 +896,14 @@ def _net_debt_result(field_map: dict[str, CanonicalFieldRecord]) -> tuple[str | 
 
 
 def _adjusted_equity_value(field_map: dict[str, CanonicalFieldRecord]) -> tuple[str | None, list[CanonicalFieldRecord], list[str]]:
+    """Handle adjusted equity value.
+    
+    Args:
+        field_map: The field_map value.
+    
+    Returns:
+        The computed result.
+    """
     total_equity = field_map.get("total_equity")
     treasury_stock = field_map.get("treasury_stock")
     equity_value = _field_value(total_equity)
@@ -697,6 +923,14 @@ def _adjusted_equity_value(field_map: dict[str, CanonicalFieldRecord]) -> tuple[
 
 
 def _tangible_capital_value(field_map: dict[str, CanonicalFieldRecord]) -> tuple[str | None, list[CanonicalFieldRecord], list[str]]:
+    """Handle tangible capital value.
+    
+    Args:
+        field_map: The field_map value.
+    
+    Returns:
+        The computed result.
+    """
     total_equity = field_map.get("total_equity")
     goodwill = field_map.get("goodwill")
     intangible_assets = field_map.get("intangible_assets_excluding_goodwill")
@@ -718,6 +952,16 @@ def _tangible_capital_value(field_map: dict[str, CanonicalFieldRecord]) -> tuple
 
 
 def _average_value(current: str | None, previous: str | None, fallback_warning: str) -> tuple[str | None, list[str]]:
+    """Handle average value.
+    
+    Args:
+        current: The current value.
+        previous: The previous value.
+        fallback_warning: The fallback_warning value.
+    
+    Returns:
+        The computed result.
+    """
     if current is None:
         return None, ["missing_required_source_fact"]
     if previous is None:
@@ -730,10 +974,26 @@ def _average_value(current: str | None, previous: str | None, fallback_warning: 
 
 
 def _used_fields(*fields: CanonicalFieldRecord | None) -> list[CanonicalFieldRecord]:
+    """Handle used fields.
+    
+    Args:
+        fields: The fields value.
+    
+    Returns:
+        The computed result.
+    """
     return [field for field in fields if field is not None]
 
 
 def _merge_source_facts(fields: list[CanonicalFieldRecord]) -> list[MetricSourceFact]:
+    """Handle merge source facts.
+    
+    Args:
+        fields: The fields value.
+    
+    Returns:
+        The computed result.
+    """
     source_facts: list[MetricSourceFact] = []
     seen: set[tuple[str, str, str | None, str | None]] = set()
     for field in fields:
@@ -747,17 +1007,43 @@ def _merge_source_facts(fields: list[CanonicalFieldRecord]) -> list[MetricSource
 
 
 def _metric_record_id(fields_artifact: PeriodFieldsArtifact, metric_code: str) -> str:
+    """Handle metric record id.
+    
+    Args:
+        fields_artifact: The fields_artifact value.
+        metric_code: The metric_code value.
+    
+    Returns:
+        The computed result.
+    """
     quarter = fields_artifact.identity.fiscal_quarter if fields_artifact.identity.fiscal_quarter is not None else "A"
     return f"{fields_artifact.identity.ticker}:{fields_artifact.identity.period_type}:{fields_artifact.identity.fiscal_year}:{quarter}:{metric_code}"
 
 
 def _field_value(field: CanonicalFieldRecord | None) -> str | None:
+    """Handle field value.
+    
+    Args:
+        field: The field value.
+    
+    Returns:
+        The computed result.
+    """
     if field is None:
         return None
     return field.value
 
 
 def _subtract(left: str | None, right: str | None) -> str | None:
+    """Handle subtract.
+    
+    Args:
+        left: The left value.
+        right: The right value.
+    
+    Returns:
+        The computed result.
+    """
     if left is None or right is None:
         return None
     try:
@@ -768,6 +1054,15 @@ def _subtract(left: str | None, right: str | None) -> str | None:
 
 
 def _multiply_values(left: str | None, right: str | None) -> str | None:
+    """Handle multiply values.
+    
+    Args:
+        left: The left value.
+        right: The right value.
+    
+    Returns:
+        The computed result.
+    """
     if left is None or right is None:
         return None
     try:
@@ -778,6 +1073,14 @@ def _multiply_values(left: str | None, right: str | None) -> str | None:
 
 
 def _sum_values(*values: str | None) -> str | None:
+    """Handle sum values.
+    
+    Args:
+        values: The values value.
+    
+    Returns:
+        The computed result.
+    """
     usable = [value for value in values if value is not None]
     if not usable:
         return None
@@ -789,16 +1092,40 @@ def _sum_values(*values: str | None) -> str | None:
 
 
 def _annualize_quarter_value(value: str) -> str:
+    """Handle annualize quarter value.
+    
+    Args:
+        value: The value value.
+    
+    Returns:
+        The computed result.
+    """
     return _decimal_text(Decimal(value) * Decimal("4"))
 
 
 def _decimal_text(value: Decimal) -> str:
+    """Handle decimal text.
+    
+    Args:
+        value: The value value.
+    
+    Returns:
+        The computed result.
+    """
     if value == value.to_integral():
         return str(value.quantize(Decimal("1")))
     return format(value.normalize(), "f")
 
 
 def _confidence_from_warnings(warnings: list[str]) -> str:
+    """Handle confidence from warnings.
+    
+    Args:
+        warnings: The warnings value.
+    
+    Returns:
+        The computed result.
+    """
     if not warnings:
         return "1.00"
     if any(code in warnings for code in ["missing_required_source_fact", "missing_prior_comparable", "negative_or_zero_denominator"]):
@@ -810,6 +1137,14 @@ def _confidence_from_warnings(warnings: list[str]) -> str:
 
 
 def _unique_warnings(warnings: list[str]) -> list[str]:
+    """Handle unique warnings.
+    
+    Args:
+        warnings: The warnings value.
+    
+    Returns:
+        The computed result.
+    """
     seen: set[str] = set()
     ordered: list[str] = []
     for warning in warnings:
