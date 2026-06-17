@@ -13,6 +13,14 @@ from metric_parser.pipeline import CompanyMetricBuildResult
 
 
 def flatten_metric_records(bundles: list[MetricsBundleArtifact]) -> list[dict[str, Any]]:
+    """Flatten metric bundle artifacts into metric row dictionaries.
+    
+    Args:
+        bundles: The bundles value.
+    
+    Returns:
+        The computed result.
+    """
     rows: list[dict[str, Any]] = []
     for bundle in bundles:
         rows.extend(metric.to_dict() for metric in bundle.metrics)
@@ -20,6 +28,14 @@ def flatten_metric_records(bundles: list[MetricsBundleArtifact]) -> list[dict[st
 
 
 def flatten_warning_records(bundles: list[MetricsBundleArtifact]) -> list[dict[str, Any]]:
+    """Flatten metric warning artifacts into warning row dictionaries.
+    
+    Args:
+        bundles: The bundles value.
+    
+    Returns:
+        The computed result.
+    """
     rows: list[dict[str, Any]] = []
     for bundle in bundles:
         rows.extend(warning.to_dict() for warning in bundle.warnings)
@@ -27,10 +43,27 @@ def flatten_warning_records(bundles: list[MetricsBundleArtifact]) -> list[dict[s
 
 
 def flatten_period_fields(artifacts: list[PeriodFieldsArtifact]) -> list[dict[str, Any]]:
+    """Flatten period field artifacts into field row dictionaries.
+    
+    Args:
+        artifacts: The artifacts value.
+    
+    Returns:
+        The computed result.
+    """
     return [artifact.to_dict() for artifact in artifacts]
 
 
 def write_company_metric_artifacts(output_dir: str | Path, build: CompanyMetricBuildResult) -> dict[str, str]:
+    """Write all metric-parser output artifacts for a company build.
+    
+    Args:
+        output_dir: The output_dir value.
+        build: The build value.
+    
+    Returns:
+        The computed result.
+    """
     output_root = Path(output_dir)
     output_root.mkdir(parents=True, exist_ok=True)
 
@@ -79,4 +112,10 @@ def write_company_metric_artifacts(output_dir: str | Path, build: CompanyMetricB
 
 
 def _write_json(path: Path, payload: Any) -> None:
+    """Write json.
+    
+    Args:
+        path: The path value.
+        payload: The payload value.
+    """
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
