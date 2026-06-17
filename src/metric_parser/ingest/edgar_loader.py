@@ -8,6 +8,14 @@ from metric_parser.ingest.edgar_models import PeriodicReportParsedFiling
 
 
 def load_catalog_records(path: str | Path) -> list[FilingCatalogRecord]:
+    """Load Edgar filing catalog records from JSON Lines.
+    
+    Args:
+        path: The path value.
+    
+    Returns:
+        The computed result.
+    """
     records: list[FilingCatalogRecord] = []
     path = Path(path)
     for line in path.read_text(encoding="utf-8").splitlines():
@@ -18,15 +26,39 @@ def load_catalog_records(path: str | Path) -> list[FilingCatalogRecord]:
 
 
 def load_periodic_report_filing(path: str | Path) -> PeriodicReportParsedFiling:
+    """Load one normalized periodic filing artifact.
+    
+    Args:
+        path: The path value.
+    
+    Returns:
+        The computed result.
+    """
     payload = json.loads(Path(path).read_text(encoding="utf-8"))
     return PeriodicReportParsedFiling.from_dict(payload)
 
 
 def filter_metric_relevant_periodic_records(records: list[FilingCatalogRecord]) -> list[FilingCatalogRecord]:
+    """Keep only periodic filings that can feed metric computation.
+    
+    Args:
+        records: The records value.
+    
+    Returns:
+        The computed result.
+    """
     return [record for record in records if record.is_metric_relevant_periodic]
 
 
 def select_preferred_periodic_records(records: list[FilingCatalogRecord]) -> list[FilingCatalogRecord]:
+    """Choose the preferred filing for each company, form family, and period.
+    
+    Args:
+        records: The records value.
+    
+    Returns:
+        The computed result.
+    """
     grouped: dict[tuple[str, str, str | None], list[FilingCatalogRecord]] = {}
     for record in filter_metric_relevant_periodic_records(records):
         key = (record.cik, record.form_family, record.report_period)
@@ -39,6 +71,14 @@ def select_preferred_periodic_records(records: list[FilingCatalogRecord]) -> lis
 
 
 def _catalog_preference_key(record: FilingCatalogRecord) -> tuple[int, str, str, str]:
+    """Handle catalog preference key.
+    
+    Args:
+        record: The record value.
+    
+    Returns:
+        The computed result.
+    """
     return (
         int(record.is_amendment),
         record.filing_date,
