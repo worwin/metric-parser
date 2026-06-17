@@ -35,6 +35,11 @@ class CompanyMetricBuildResult:
     quarterly_metrics: list[MetricsBundleArtifact] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the object to a JSON-ready dictionary.
+        
+        Returns:
+            The computed result.
+        """
         return {
             "run_id": self.run_id,
             "ticker": self.ticker,
@@ -57,6 +62,18 @@ def build_metric_histories_from_catalog_path(
     cik: str | None = None,
     created_at: str | None = None,
 ) -> list[CompanyMetricBuildResult]:
+    """Build metric histories from catalog path.
+    
+    Args:
+        run_id: The run_id value.
+        catalog_path: The catalog_path value.
+        ticker: The ticker value.
+        cik: The cik value.
+        created_at: The created_at value.
+    
+    Returns:
+        The computed result.
+    """
     records = load_catalog_records(catalog_path)
     filtered_records = _filter_company_records(records, ticker=ticker, cik=cik)
     grouped: dict[str, list[FilingCatalogRecord]] = {}
@@ -81,6 +98,18 @@ def build_company_metric_history_from_catalog_path(
     cik: str | None = None,
     created_at: str | None = None,
 ) -> CompanyMetricBuildResult:
+    """Build company metric history from catalog path.
+    
+    Args:
+        run_id: The run_id value.
+        catalog_path: The catalog_path value.
+        ticker: The ticker value.
+        cik: The cik value.
+        created_at: The created_at value.
+    
+    Returns:
+        The computed result.
+    """
     results = build_metric_histories_from_catalog_path(
         run_id=run_id,
         catalog_path=catalog_path,
@@ -101,6 +130,17 @@ def build_company_metric_history(
     created_at: str | None = None,
     source_catalog_path: str | None = None,
 ) -> CompanyMetricBuildResult:
+    """Build annual and quarterly metric history artifacts for one company.
+    
+    Args:
+        run_id: The run_id value.
+        records: The records value.
+        created_at: The created_at value.
+        source_catalog_path: The source_catalog_path value.
+    
+    Returns:
+        The computed result.
+    """
     if not records:
         raise ValueError("Cannot build metric history without catalog records")
 
@@ -156,6 +196,15 @@ def _build_standalone_quarter_history(
     quarterly_ytd_fields: list[PeriodFieldsArtifact],
     annual_fields: list[PeriodFieldsArtifact],
 ) -> list[PeriodFieldsArtifact]:
+    """Build standalone quarter history.
+    
+    Args:
+        quarterly_ytd_fields: The quarterly_ytd_fields value.
+        annual_fields: The annual_fields value.
+    
+    Returns:
+        The computed result.
+    """
     quarterly_by_key = {
         (artifact.identity.fiscal_year, artifact.identity.fiscal_quarter): artifact
         for artifact in quarterly_ytd_fields
@@ -187,6 +236,16 @@ def _compute_annual_metric_history(
     annual_fields: list[PeriodFieldsArtifact],
     created_at: str,
 ) -> list[MetricsBundleArtifact]:
+    """Handle compute annual metric history.
+    
+    Args:
+        run_id: The run_id value.
+        annual_fields: The annual_fields value.
+        created_at: The created_at value.
+    
+    Returns:
+        The computed result.
+    """
     bundles: list[MetricsBundleArtifact] = []
     previous_period: PeriodFieldsArtifact | None = None
     for artifact in annual_fields:
@@ -207,6 +266,16 @@ def _compute_quarterly_metric_history(
     quarterly_fields: list[PeriodFieldsArtifact],
     created_at: str,
 ) -> list[MetricsBundleArtifact]:
+    """Handle compute quarterly metric history.
+    
+    Args:
+        run_id: The run_id value.
+        quarterly_fields: The quarterly_fields value.
+        created_at: The created_at value.
+    
+    Returns:
+        The computed result.
+    """
     bundles: list[MetricsBundleArtifact] = []
     previous_period: PeriodFieldsArtifact | None = None
     prior_comparable_index: dict[tuple[int, int | None], PeriodFieldsArtifact] = {}
@@ -231,6 +300,16 @@ def _filter_company_records(
     ticker: str | None = None,
     cik: str | None = None,
 ) -> list[FilingCatalogRecord]:
+    """Filter company records.
+    
+    Args:
+        records: The records value.
+        ticker: The ticker value.
+        cik: The cik value.
+    
+    Returns:
+        The computed result.
+    """
     filtered = records
     if cik is not None:
         filtered = [record for record in filtered if record.cik == cik]
@@ -241,6 +320,14 @@ def _filter_company_records(
 
 
 def _record_ticker(record: FilingCatalogRecord) -> str | None:
+    """Handle record ticker.
+    
+    Args:
+        record: The record value.
+    
+    Returns:
+        The computed result.
+    """
     candidate_paths = [record.local_normalized_path, record.local_raw_filing_path, record.local_raw_index_path]
     for path in candidate_paths:
         if not path:
@@ -254,6 +341,14 @@ def _record_ticker(record: FilingCatalogRecord) -> str | None:
 
 
 def _artifact_sort_key(artifact: PeriodFieldsArtifact) -> tuple[str, int, int, str]:
+    """Handle artifact sort key.
+    
+    Args:
+        artifact: The artifact value.
+    
+    Returns:
+        The computed result.
+    """
     filing_period = artifact.identity.filing_period or artifact.identity.period_end or ''
     fiscal_quarter = artifact.identity.fiscal_quarter or 0
     primary_accession = artifact.identity.primary_filing_accession or ''
@@ -261,4 +356,12 @@ def _artifact_sort_key(artifact: PeriodFieldsArtifact) -> tuple[str, int, int, s
 
 
 def _record_sort_key(record: FilingCatalogRecord) -> tuple[str, str, str, str]:
+    """Handle record sort key.
+    
+    Args:
+        record: The record value.
+    
+    Returns:
+        The computed result.
+    """
     return (record.report_period or '', record.filing_date, record.form_family, record.accession_number)
