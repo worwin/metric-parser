@@ -24,6 +24,11 @@ class PeriodArtifactIdentity:
     source_accessions: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the object to a JSON-ready dictionary.
+        
+        Returns:
+            The computed result.
+        """
         return asdict(self)
 
 
@@ -44,6 +49,11 @@ class MetricSourceFact:
     mapped_field_code: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the object to a JSON-ready dictionary.
+        
+        Returns:
+            The computed result.
+        """
         return asdict(self)
 
 
@@ -60,6 +70,11 @@ class CanonicalFieldRecord:
     source_facts: list[MetricSourceFact] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the object to a JSON-ready dictionary.
+        
+        Returns:
+            The computed result.
+        """
         data = asdict(self)
         data["source_facts"] = [fact.to_dict() for fact in self.source_facts]
         return data
@@ -98,6 +113,11 @@ class MetricRecord:
     created_at: str = ""
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the object to a JSON-ready dictionary.
+        
+        Returns:
+            The computed result.
+        """
         data = asdict(self)
         data["source_facts"] = [fact.to_dict() for fact in self.source_facts]
         return data
@@ -123,6 +143,11 @@ class MetricWarningRecord:
     created_at: str = ""
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the object to a JSON-ready dictionary.
+        
+        Returns:
+            The computed result.
+        """
         return asdict(self)
 
 
@@ -136,6 +161,11 @@ class PeriodFieldsArtifact:
     fields: list[CanonicalFieldRecord] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the object to a JSON-ready dictionary.
+        
+        Returns:
+            The computed result.
+        """
         return {
             "schema_version": self.schema_version,
             "run_id": self.run_id,
@@ -156,6 +186,11 @@ class MetricsBundleArtifact:
     warnings: list[MetricWarningRecord] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the object to a JSON-ready dictionary.
+        
+        Returns:
+            The computed result.
+        """
         return {
             "schema_version": self.schema_version,
             "run_id": self.run_id,
