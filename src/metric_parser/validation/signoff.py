@@ -58,6 +58,11 @@ class ValidationCompanyTarget:
     catalog_paths: list[str]
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the object to a JSON-ready dictionary.
+        
+        Returns:
+            The computed result.
+        """
         return asdict(self)
 
 
@@ -75,6 +80,11 @@ class MetricPeriodSignoff:
     note: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the object to a JSON-ready dictionary.
+        
+        Returns:
+            The computed result.
+        """
         return asdict(self)
 
 
@@ -90,6 +100,11 @@ class MetricSignoffRecord:
     notes: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the object to a JSON-ready dictionary.
+        
+        Returns:
+            The computed result.
+        """
         return {
             "metric_code": self.metric_code,
             "metric_name": self.metric_name,
@@ -114,6 +129,11 @@ class ValidationReport:
     signoffs: list[MetricSignoffRecord]
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the object to a JSON-ready dictionary.
+        
+        Returns:
+            The computed result.
+        """
         return {
             "run_id": self.run_id,
             "created_at": self.created_at,
@@ -141,6 +161,17 @@ def build_validation_report(
     output_root: str | Path,
     created_at: str | None = None,
 ) -> ValidationReport:
+    """Build a cohort signoff report for metric coverage and quality.
+    
+    Args:
+        run_id: The run_id value.
+        company_targets: The company_targets value.
+        output_root: The output_root value.
+        created_at: The created_at value.
+    
+    Returns:
+        The computed result.
+    """
     if created_at is None:
         created_at = datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
 
@@ -177,10 +208,22 @@ def build_validation_report(
 
 
 def write_validation_report(path: str | Path, report: ValidationReport) -> None:
+    """Write validation report artifacts to disk.
+    
+    Args:
+        path: The path value.
+        report: The report value.
+    """
     Path(path).write_text(json.dumps(report.to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
 def write_validation_markdown(path: str | Path, report: ValidationReport) -> None:
+    """Write a Markdown summary of metric validation results.
+    
+    Args:
+        path: The path value.
+        report: The report value.
+    """
     lines: list[str] = []
     lines.append("# Metric Signoff Report")
     lines.append("")
@@ -216,6 +259,14 @@ def write_validation_markdown(path: str | Path, report: ValidationReport) -> Non
 
 
 def _build_metric_signoffs(builds: list[CompanyMetricBuildResult]) -> list[MetricSignoffRecord]:
+    """Build metric signoffs.
+    
+    Args:
+        builds: The builds value.
+    
+    Returns:
+        The computed result.
+    """
     signoffs: list[MetricSignoffRecord] = []
     for definition in METRIC_DEFINITIONS:
         annual = _summarize_metric_period(builds, definition.metric_code, "annual")
@@ -242,6 +293,16 @@ def _summarize_metric_period(
     metric_code: str,
     period_type: str,
 ) -> MetricPeriodSignoff:
+    """Handle summarize metric period.
+    
+    Args:
+        builds: The builds value.
+        metric_code: The metric_code value.
+        period_type: The period_type value.
+    
+    Returns:
+        The computed result.
+    """
     company_count = len(builds)
     companies_with_histories = 0
     relevant_company_count = 0
@@ -310,6 +371,15 @@ def _summarize_metric_period(
 
 
 def _metric_rows_from_bundles(bundles: list[Any], metric_code: str) -> list[MetricRecord]:
+    """Handle metric rows from bundles.
+    
+    Args:
+        bundles: The bundles value.
+        metric_code: The metric_code value.
+    
+    Returns:
+        The computed result.
+    """
     rows: list[MetricRecord] = []
     for bundle in bundles:
         for metric in bundle.metrics:
@@ -324,6 +394,14 @@ def _metric_rows_from_bundles(bundles: list[Any], metric_code: str) -> list[Metr
 
 
 def _is_applicable(metric: MetricRecord) -> bool:
+    """Handle is applicable.
+    
+    Args:
+        metric: The metric value.
+    
+    Returns:
+        The computed result.
+    """
     return metric.applicability == "applicable" and metric.value is not None
 
 
@@ -334,6 +412,18 @@ def _assess_period_status(
     mean_coverage: float,
     warning_counter: Counter[str],
 ) -> tuple[str, str | None]:
+    """Handle assess period status.
+    
+    Args:
+        metric_code: The metric_code value.
+        relevant_company_count: The relevant_company_count value.
+        latest_applicable_count: The latest_applicable_count value.
+        mean_coverage: The mean_coverage value.
+        warning_counter: The warning_counter value.
+    
+    Returns:
+        The computed result.
+    """
     if relevant_company_count == 0:
         if metric_code in CONTEXTUAL_METRICS:
             return "not_tested", "contextual metric with no applicable companies in the current cohort"
@@ -352,6 +442,15 @@ def _assess_period_status(
 
 
 def _combine_statuses(annual_status: str, quarterly_status: str) -> str:
+    """Handle combine statuses.
+    
+    Args:
+        annual_status: The annual_status value.
+        quarterly_status: The quarterly_status value.
+    
+    Returns:
+        The computed result.
+    """
     if annual_status != "not_tested":
         return annual_status
     if quarterly_status != "not_tested":
@@ -364,6 +463,16 @@ def _collect_signoff_notes(
     annual: MetricPeriodSignoff,
     quarterly: MetricPeriodSignoff,
 ) -> list[str]:
+    """Handle collect signoff notes.
+    
+    Args:
+        metric_code: The metric_code value.
+        annual: The annual value.
+        quarterly: The quarterly value.
+    
+    Returns:
+        The computed result.
+    """
     notes: list[str] = []
     if metric_code in CONTEXTUAL_METRICS:
         notes.append("contextual metric; non-dividend issuers should not be treated as failures")
@@ -379,10 +488,26 @@ def _collect_signoff_notes(
 
 
 def _ratio_text(value: float) -> str:
+    """Handle ratio text.
+    
+    Args:
+        value: The value value.
+    
+    Returns:
+        The computed result.
+    """
     return format(value, ".3f")
 
 
 def _load_records_for_target(target: ValidationCompanyTarget) -> list[Any]:
+    """Load records for target.
+    
+    Args:
+        target: The target value.
+    
+    Returns:
+        The computed result.
+    """
     records = []
     for path_text in target.catalog_paths:
         path = Path(path_text)
