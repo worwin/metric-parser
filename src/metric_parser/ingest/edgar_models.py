@@ -16,6 +16,14 @@ class EdgarValidationIssue:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "EdgarValidationIssue":
+        """Create an instance from a decoded JSON dictionary.
+        
+        Args:
+            data: The data value.
+        
+        Returns:
+            The computed result.
+        """
         return cls(
             code=str(data.get("code") or ""),
             message=str(data.get("message") or ""),
@@ -34,6 +42,14 @@ class EdgarValidationSummary:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any] | None) -> "EdgarValidationSummary | None":
+        """Create an instance from a decoded JSON dictionary.
+        
+        Args:
+            data: The data value.
+        
+        Returns:
+            The computed result.
+        """
         if data is None:
             return None
         return cls(
@@ -67,6 +83,14 @@ class FilingCatalogRecord:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "FilingCatalogRecord":
+        """Create an instance from a decoded JSON dictionary.
+        
+        Args:
+            data: The data value.
+        
+        Returns:
+            The computed result.
+        """
         return cls(
             accession_number=str(data.get("accession_number") or ""),
             cik=str(data.get("cik") or ""),
@@ -88,6 +112,11 @@ class FilingCatalogRecord:
 
     @property
     def form_family(self) -> str:
+        """Handle form family.
+        
+        Returns:
+            The computed result.
+        """
         form = self.form.upper()
         if form.startswith("10-K"):
             return "10-K"
@@ -97,10 +126,20 @@ class FilingCatalogRecord:
 
     @property
     def is_amendment(self) -> bool:
+        """Handle is amendment.
+        
+        Returns:
+            The computed result.
+        """
         return self.form.upper().endswith("/A")
 
     @property
     def is_metric_relevant_periodic(self) -> bool:
+        """Handle is metric relevant periodic.
+        
+        Returns:
+            The computed result.
+        """
         return self.form.upper() in METRIC_RELEVANT_PERIODIC_FORMS
 
 
@@ -134,6 +173,14 @@ class PeriodicReportFactRecord:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "PeriodicReportFactRecord":
+        """Create an instance from a decoded JSON dictionary.
+        
+        Args:
+            data: The data value.
+        
+        Returns:
+            The computed result.
+        """
         return cls(
             accession_number=str(data.get("accession_number") or ""),
             cik=str(data.get("cik") or ""),
@@ -178,6 +225,14 @@ class PeriodicReportParsedFiling:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "PeriodicReportParsedFiling":
+        """Create an instance from a decoded JSON dictionary.
+        
+        Args:
+            data: The data value.
+        
+        Returns:
+            The computed result.
+        """
         return cls(
             accession_number=str(data.get("accession_number") or ""),
             cik=str(data.get("cik") or ""),
