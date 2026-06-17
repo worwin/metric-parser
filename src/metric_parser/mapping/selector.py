@@ -23,6 +23,14 @@ DOCUMENT_FISCAL_PERIOD_FOCUS = 'DocumentFiscalPeriodFocus'
 
 
 def select_canonical_fields(filing: PeriodicReportParsedFiling) -> list[CanonicalFieldRecord]:
+    """Select canonical financial fields from normalized Edgar facts.
+    
+    Args:
+        filing: The filing value.
+    
+    Returns:
+        The computed result.
+    """
     selected: list[CanonicalFieldRecord] = []
     by_code: dict[str, CanonicalFieldRecord] = {}
 
@@ -44,6 +52,16 @@ def build_period_fields_artifact(
     filing: PeriodicReportParsedFiling,
     catalog_record: FilingCatalogRecord | None = None,
 ) -> PeriodFieldsArtifact:
+    """Build the canonical field artifact for one periodic filing.
+    
+    Args:
+        run_id: The run_id value.
+        filing: The filing value.
+        catalog_record: The catalog_record value.
+    
+    Returns:
+        The computed result.
+    """
     parser_warning_codes = []
     if filing.validation is not None:
         parser_warning_codes = [warning.code for warning in filing.validation.warnings]
@@ -73,6 +91,15 @@ def build_period_fields_artifact(
 
 
 def _select_direct_field(definition: FieldDefinition, filing: PeriodicReportParsedFiling) -> CanonicalFieldRecord | None:
+    """Select direct field.
+    
+    Args:
+        definition: The definition value.
+        filing: The filing value.
+    
+    Returns:
+        The computed result.
+    """
     for alias in definition.concept_aliases:
         candidates = [
             fact
@@ -102,6 +129,14 @@ def _select_direct_field(definition: FieldDefinition, filing: PeriodicReportPars
 
 
 def _derive_total_debt(selected_fields: dict[str, CanonicalFieldRecord]) -> CanonicalFieldRecord | None:
+    """Derive total debt.
+    
+    Args:
+        selected_fields: The selected_fields value.
+    
+    Returns:
+        The computed result.
+    """
     direct = selected_fields.get('total_debt')
     if direct is not None:
         return direct
@@ -142,6 +177,16 @@ def _fact_preference_key(
     filing: PeriodicReportParsedFiling,
     definition: FieldDefinition,
 ) -> tuple[int, int, int, int, str]:
+    """Handle fact preference key.
+    
+    Args:
+        fact: The fact value.
+        filing: The filing value.
+        definition: The definition value.
+    
+    Returns:
+        The computed result.
+    """
     report_period = filing.report_period
     period_match = int(
         (definition.period_kind == 'duration' and fact.period_end == report_period)
@@ -155,6 +200,15 @@ def _fact_preference_key(
 
 
 def _resolve_ticker(filing: PeriodicReportParsedFiling, catalog_record: FilingCatalogRecord | None) -> str:
+    """Handle resolve ticker.
+    
+    Args:
+        filing: The filing value.
+        catalog_record: The catalog_record value.
+    
+    Returns:
+        The computed result.
+    """
     ticker_from_facts = next((fact.ticker_workspace for fact in filing.facts if fact.ticker_workspace), None)
     if ticker_from_facts:
         return ticker_from_facts.upper()
@@ -177,6 +231,14 @@ def _resolve_ticker(filing: PeriodicReportParsedFiling, catalog_record: FilingCa
 
 
 def _resolve_period_start(filing: PeriodicReportParsedFiling) -> str | None:
+    """Handle resolve period start.
+    
+    Args:
+        filing: The filing value.
+    
+    Returns:
+        The computed result.
+    """
     duration_candidates = [
         fact
         for fact in filing.facts
@@ -189,10 +251,26 @@ def _resolve_period_start(filing: PeriodicReportParsedFiling) -> str | None:
 
 
 def _period_type_from_form(form: str) -> str:
+    """Handle period type from form.
+    
+    Args:
+        form: The form value.
+    
+    Returns:
+        The computed result.
+    """
     return 'annual' if form.upper().startswith('10-K') else 'quarterly'
 
 
 def _fiscal_year_from_filing(filing: PeriodicReportParsedFiling) -> int:
+    """Handle fiscal year from filing.
+    
+    Args:
+        filing: The filing value.
+    
+    Returns:
+        The computed result.
+    """
     document_fiscal_year = _document_fiscal_year_focus(filing)
     if document_fiscal_year is not None:
         return document_fiscal_year
@@ -200,6 +278,15 @@ def _fiscal_year_from_filing(filing: PeriodicReportParsedFiling) -> int:
 
 
 def _fiscal_quarter_from_filing(filing: PeriodicReportParsedFiling, period_start: str | None) -> int | None:
+    """Handle fiscal quarter from filing.
+    
+    Args:
+        filing: The filing value.
+        period_start: The period_start value.
+    
+    Returns:
+        The computed result.
+    """
     document_period_focus = _document_fiscal_period_focus(filing)
     if document_period_focus == 'Q1':
         return 1
@@ -213,6 +300,14 @@ def _fiscal_quarter_from_filing(filing: PeriodicReportParsedFiling, period_start
 
 
 def _document_fiscal_year_focus(filing: PeriodicReportParsedFiling) -> int | None:
+    """Handle document fiscal year focus.
+    
+    Args:
+        filing: The filing value.
+    
+    Returns:
+        The computed result.
+    """
     for fact in filing.facts:
         if fact.concept_local_name != DOCUMENT_FISCAL_YEAR_FOCUS:
             continue
@@ -226,6 +321,14 @@ def _document_fiscal_year_focus(filing: PeriodicReportParsedFiling) -> int | Non
 
 
 def _document_fiscal_period_focus(filing: PeriodicReportParsedFiling) -> str | None:
+    """Handle document fiscal period focus.
+    
+    Args:
+        filing: The filing value.
+    
+    Returns:
+        The computed result.
+    """
     for fact in filing.facts:
         if fact.concept_local_name != DOCUMENT_FISCAL_PERIOD_FOCUS:
             continue
@@ -238,10 +341,28 @@ def _document_fiscal_period_focus(filing: PeriodicReportParsedFiling) -> str | N
 
 
 def _fiscal_year_from_report_period(report_period: str) -> int:
+    """Handle fiscal year from report period.
+    
+    Args:
+        report_period: The report_period value.
+    
+    Returns:
+        The computed result.
+    """
     return date.fromisoformat(report_period).year
 
 
 def _metric_source_fact(role: str, fact: PeriodicReportFactRecord, mapped_field_code: str) -> MetricSourceFact:
+    """Handle metric source fact.
+    
+    Args:
+        role: The role value.
+        fact: The fact value.
+        mapped_field_code: The mapped_field_code value.
+    
+    Returns:
+        The computed result.
+    """
     return MetricSourceFact(
         role=role,
         source_accession=fact.accession_number,
@@ -260,6 +381,15 @@ def _metric_source_fact(role: str, fact: PeriodicReportFactRecord, mapped_field_
 
 
 def _normalize_unit(unit: str | None, value_type: str) -> str | None:
+    """Handle normalize unit.
+    
+    Args:
+        unit: The unit value.
+        value_type: The value_type value.
+    
+    Returns:
+        The computed result.
+    """
     if value_type == 'currency':
         return 'usd' if unit and 'USD' in unit.upper() else unit
     if value_type == 'count':
@@ -268,6 +398,14 @@ def _normalize_unit(unit: str | None, value_type: str) -> str | None:
 
 
 def _coerce_numeric_text(value: str | None) -> str | None:
+    """Handle coerce numeric text.
+    
+    Args:
+        value: The value value.
+    
+    Returns:
+        The computed result.
+    """
     if value is None:
         return None
     text = value.strip()
@@ -291,6 +429,14 @@ def _coerce_numeric_text(value: str | None) -> str | None:
 
 
 def _fact_numeric_value(fact: PeriodicReportFactRecord) -> str | None:
+    """Handle fact numeric value.
+    
+    Args:
+        fact: The fact value.
+    
+    Returns:
+        The computed result.
+    """
     normalized = _coerce_numeric_text(fact.normalized_value)
     if normalized is not None:
         return normalized
@@ -298,6 +444,15 @@ def _fact_numeric_value(fact: PeriodicReportFactRecord) -> str | None:
 
 
 def _duration_days(period_start: str | None, period_end: str | None) -> int:
+    """Handle duration days.
+    
+    Args:
+        period_start: The period_start value.
+        period_end: The period_end value.
+    
+    Returns:
+        The computed result.
+    """
     if not period_start or not period_end:
         return -1
     start = date.fromisoformat(period_start)
