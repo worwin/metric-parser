@@ -177,9 +177,19 @@ SCHEMA_STATEMENTS: tuple[str, ...] = (
 
 
 def connect_duckdb(database_path: str | Path):
+    """Open a DuckDB connection for metric storage and querying.
+    
+    Args:
+        database_path: The database_path value.
+    """
     return duckdb.connect(str(Path(database_path)))
 
 
 def ensure_schema(connection) -> None:
+    """Create the DuckDB metric schema if it does not already exist.
+    
+    Args:
+        connection: The connection value.
+    """
     for statement in SCHEMA_STATEMENTS:
         connection.execute(statement)
