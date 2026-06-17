@@ -77,6 +77,16 @@ NON_DELTA_CURRENT_FIELD_CODES = frozenset(
 
 
 def infer_fiscal_quarter_from_filing(form: str, report_period: str | None, period_start: str | None) -> int | None:
+    """Infer the fiscal quarter represented by a periodic filing.
+    
+    Args:
+        form: The form value.
+        report_period: The report_period value.
+        period_start: The period_start value.
+    
+    Returns:
+        The computed result.
+    """
     form_upper = form.upper()
     if form_upper.startswith("10-K"):
         return 4
@@ -98,6 +108,16 @@ def derive_standalone_quarter_fields(
     prior_ytd_artifact: PeriodFieldsArtifact | None = None,
     annual_artifact: PeriodFieldsArtifact | None = None,
 ) -> PeriodFieldsArtifact:
+    """Convert year-to-date quarterly facts into standalone quarter fields.
+    
+    Args:
+        current_artifact: The current_artifact value.
+        prior_ytd_artifact: The prior_ytd_artifact value.
+        annual_artifact: The annual_artifact value.
+    
+    Returns:
+        The computed result.
+    """
     quarter = current_artifact.identity.fiscal_quarter
     if quarter is None:
         raise ValueError("Current artifact is missing fiscal_quarter")
@@ -177,6 +197,17 @@ def _delta_field(
     prior_field: CanonicalFieldRecord | None,
     method: str,
 ) -> CanonicalFieldRecord:
+    """Handle delta field.
+    
+    Args:
+        field_code: The field_code value.
+        current_field: The current_field value.
+        prior_field: The prior_field value.
+        method: The method value.
+    
+    Returns:
+        The computed result.
+    """
     if current_field is None:
         return CanonicalFieldRecord(
             field_code=field_code,
@@ -223,6 +254,15 @@ def _delta_field(
 
 
 def _mark_current_period_proxy(field: CanonicalFieldRecord, quarter: int) -> CanonicalFieldRecord:
+    """Handle mark current period proxy.
+    
+    Args:
+        field: The field value.
+        quarter: The quarter value.
+    
+    Returns:
+        The computed result.
+    """
     if quarter <= 1:
         return field
     warnings = list(field.warnings)
@@ -241,6 +281,15 @@ def _mark_current_period_proxy(field: CanonicalFieldRecord, quarter: int) -> Can
 
 
 def _duration_days(period_start: str | None, period_end: str | None) -> int:
+    """Handle duration days.
+    
+    Args:
+        period_start: The period_start value.
+        period_end: The period_end value.
+    
+    Returns:
+        The computed result.
+    """
     if not period_start or not period_end:
         return -1
     start = date.fromisoformat(period_start)
