@@ -12,6 +12,12 @@ from metric_parser.db.schema import ensure_schema
 
 
 def ingest_company_artifact_directory(database_path: str | Path, artifact_dir: str | Path) -> None:
+    """Ingest company artifact directory.
+    
+    Args:
+        database_path: The database_path value.
+        artifact_dir: The artifact_dir value.
+    """
     artifact_root = Path(artifact_dir)
     connection = connect_duckdb(database_path)
     try:
@@ -33,11 +39,25 @@ def ingest_company_artifact_directory(database_path: str | Path, artifact_dir: s
 
 
 def ingest_company_artifact_directories(database_path: str | Path, artifact_directories: list[str | Path]) -> None:
+    """Ingest company artifact directories.
+    
+    Args:
+        database_path: The database_path value.
+        artifact_directories: The artifact_directories value.
+    """
     for artifact_dir in artifact_directories:
         ingest_company_artifact_directory(database_path=database_path, artifact_dir=artifact_dir)
 
 
 def _load_artifact_payloads(artifact_root: Path) -> dict[str, Any]:
+    """Load artifact payloads.
+    
+    Args:
+        artifact_root: The artifact_root value.
+    
+    Returns:
+        The computed result.
+    """
     file_names = {
         'build_manifest': 'build_manifest.json',
         'source_filings': 'source_filings.json',
@@ -53,11 +73,24 @@ def _load_artifact_payloads(artifact_root: Path) -> dict[str, Any]:
 
 
 def _delete_company_rows(connection, ticker: str, cik: str) -> None:
+    """Handle delete company rows.
+    
+    Args:
+        connection: The connection value.
+        ticker: The ticker value.
+        cik: The cik value.
+    """
     for table_name in ('metric_lineage', 'metric_warnings', 'metrics_annual', 'metrics_quarterly', 'filings', 'companies'):
         connection.execute(f"DELETE FROM {table_name} WHERE cik = ? OR ticker = ?", [cik, ticker])
 
 
 def _upsert_company(connection, manifest: dict[str, Any]) -> None:
+    """Handle upsert company.
+    
+    Args:
+        connection: The connection value.
+        manifest: The manifest value.
+    """
     connection.execute(
         """
         INSERT INTO companies (
@@ -91,6 +124,11 @@ def _upsert_company(connection, manifest: dict[str, Any]) -> None:
 
 
 def _insert_metric_definitions(connection) -> None:
+    """Handle insert metric definitions.
+    
+    Args:
+        connection: The connection value.
+    """
     connection.execute('DELETE FROM metric_definitions')
     rows = [
         (
@@ -125,6 +163,13 @@ def _insert_metric_definitions(connection) -> None:
 
 
 def _insert_filings(connection, filings: list[dict[str, Any]], ticker: str) -> None:
+    """Handle insert filings.
+    
+    Args:
+        connection: The connection value.
+        filings: The filings value.
+        ticker: The ticker value.
+    """
     rows = []
     for filing in filings:
         rows.append(
@@ -177,6 +222,13 @@ def _insert_filings(connection, filings: list[dict[str, Any]], ticker: str) -> N
 
 
 def _insert_metrics(connection, table_name: str, metrics: list[dict[str, Any]]) -> None:
+    """Handle insert metrics.
+    
+    Args:
+        connection: The connection value.
+        table_name: The table_name value.
+        metrics: The metrics value.
+    """
     rows = []
     for metric in metrics:
         rows.append(
@@ -251,6 +303,12 @@ def _insert_metrics(connection, table_name: str, metrics: list[dict[str, Any]]) 
 
 
 def _insert_metric_warnings(connection, warnings: list[dict[str, Any]]) -> None:
+    """Handle insert metric warnings.
+    
+    Args:
+        connection: The connection value.
+        warnings: The warnings value.
+    """
     rows = [
         (
             warning.get('warning_id'),
@@ -300,6 +358,12 @@ def _insert_metric_warnings(connection, warnings: list[dict[str, Any]]) -> None:
 
 
 def _insert_metric_lineage(connection, metrics: list[dict[str, Any]]) -> None:
+    """Handle insert metric lineage.
+    
+    Args:
+        connection: The connection value.
+        metrics: The metrics value.
+    """
     rows = []
     for metric in metrics:
         for index, source_fact in enumerate(metric.get('source_facts', []), start=1):
@@ -363,6 +427,14 @@ def _insert_metric_lineage(connection, metrics: list[dict[str, Any]]) -> None:
 
 
 def _coerce_numeric_value(value: Any) -> float | None:
+    """Handle coerce numeric value.
+    
+    Args:
+        value: The value value.
+    
+    Returns:
+        The computed result.
+    """
     if value is None:
         return None
     try:
@@ -372,6 +444,14 @@ def _coerce_numeric_value(value: Any) -> float | None:
 
 
 def _form_family(form: str | None) -> str:
+    """Handle form family.
+    
+    Args:
+        form: The form value.
+    
+    Returns:
+        The computed result.
+    """
     if not form:
         return ''
     form_upper = form.upper()
